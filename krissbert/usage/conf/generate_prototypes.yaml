@@ -1,0 +1,9 @@
+model_name_or_path: microsoft/BiomedNLP-KRISSBERT-PubMed-UMLS-EL
+train_data:
+  _target_: utils.MedMentionsDataset
+  dataset_path: MedMentions/full/data/
+  split: train
+batch_size: 256
+max_length: 64
+output_prototypes: prototypes/embeddings
+output_name_cuis: prototypes/name_cuis

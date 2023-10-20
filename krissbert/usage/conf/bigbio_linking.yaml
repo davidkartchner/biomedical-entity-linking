@@ -1,0 +1,30 @@
+# path to pretrained model and tokenizer
+model_name_or_path: microsoft/BiomedNLP-KRISSBERT-PubMed-UMLS-EL
+
+test_data:
+  _target_: utils.BigBioDataset
+  dataset_name: medmentions_full
+  splits: [test]
+
+# paths to encoded data
+encoded_files: [
+  # prototypes/mm_full_embeddings.pickle
+]
+
+prototype_dir: prototypes
+
+encoded_umls_files: []
+
+entity_list_ids:
+
+entity_list_names: # prototypes/mm_full_name_cuis.txt
+
+index_path:
+
+output_dir: model_output
+
+seed: 12345
+batch_size: 256
+max_length: 64
+num_retrievals: 50
+top_ks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]

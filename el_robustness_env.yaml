@@ -1,0 +1,43 @@
+name: el-robustness
+channels:
+  - conda-forge
+  - intel
+  - pytorch
+dependencies:
+  - python=3.9
+  - cudatoolkit=11.6
+  - openssl
+  - sqlite
+  - networkx
+  - ipython
+  - ipykernel
+  - jupyter
+  - jupyter
+  - matplotlib
+  - numpy
+  - pyyaml
+  - tqdm
+  - pip
+  - pytorch=1.11
+  - pyarrow
+  - requests
+  - seaborn
+  - huggingface_hub
+  - datasets
+  - jupyter_console
+  - ipywidgets
+  - statsmodels
+  - ujson
+  - pip:
+    - transformers
+    - faiss_gpu
+    - git+https://github.com/davidkartchner/biomedical.git@fix_data_inconsistencies
+    - pandas
+    - hydra-core
+    - pytorch_metric_learning
+    - scispacy==0.5.0
+    - spacy[cuda116]
+    - scikit_learn
+    - https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.0/en_core_sci_lg-0.5.0.tar.gz
+    - https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.0/en_core_sci_scibert-0.5.0.tar.gz
+    - wandb

@@ -1,0 +1,9 @@
+Model,Training Time,Evaluation Time,Accuracy
+arboel_crossencoder,1364516,13314,0.747
+arboel_biencoder,267494,10489,0.692
+metamap,50,437,0.568
+krissbert,334,37,0.548
+scispacy,150,29,0.536
+biobart,6340,14737,0.544
+biogenel,6672,35258,0.562
+sapbert,5834,3218,0.637

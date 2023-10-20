@@ -1,0 +1,10 @@
+qmodel_name_or_path: microsoft/BiomedNLP-KRISSBERT-PubMed-UMLS-EL
+train_data:
+  _target_: utils.BigBioDataset
+  dataset_name: medmentions_full
+  splits: [train]
+batch_size: 256
+max_length: 64
+output_dir: prototypes
+# output_prototypes: prototypes/medmentions_full_embeddings.pickle
+# output_name_cuis: prototypes/medmentions_full_name_cuis.txt

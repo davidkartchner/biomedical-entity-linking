@@ -1,0 +1,26 @@
+# path to pretrained model and tokenizer
+model_name_or_path: microsoft/BiomedNLP-KRISSBERT-PubMed-UMLS-EL
+
+test_data:
+  _target_: utils.MedMentionsDataset
+  dataset_path: MedMentions/full/data/
+  split: test
+
+# paths to encoded data
+encoded_files: [
+  prototypes/embeddings
+]
+
+encoded_umls_files: []
+
+entity_list_ids:
+
+entity_list_names: prototypes/name_cuis
+
+index_path:
+
+seed: 12345
+batch_size: 256
+max_length: 64
+num_retrievals: 100
+top_ks: [1, 5, 50, 100]

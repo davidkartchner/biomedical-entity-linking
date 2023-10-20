@@ -1,0 +1,12 @@
+[submodule "biogenel"]
+	path = biogenel
+	url = git@github.com:davidkartchner/GenBioEL.git
+[submodule "sapbert"]
+	path = sapbert
+	url = git@github.com:davidkartchner/sapbert.git
+[submodule "Ab3P"]
+	path = Ab3P
+	url = git@github.com:davidkartchner/Ab3P.git
+[submodule "NCBITextLib"]
+	path = NCBITextLib
+	url = git@github.com:ncbi-nlp/NCBITextLib.git
