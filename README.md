@@ -1,6 +1,8 @@
 # Robustness comparison of Biomedical Entity Linking Models
 Benchmark and error analysis of biomedical entity linking models
 
+![Structure of our comparison of biomedical entity linking models](figures/230415_entity_linking_survey_updated.png)
+
 # Installation
 In order to run this benchmark, please install the following conda environment:
 
