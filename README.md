@@ -1,9 +1,15 @@
-# Robustness comparison of Biomedical Entity Linking Models
+# A Comprehensive Evaluation of Biomedical Entity Linking Models
 Benchmark and error analysis of biomedical entity linking models
 
 ![Structure of our comparison of biomedical entity linking models](figures/230415_entity_linking_survey_updated.png)
 
-# Installation
+### Citation
+If you have found our manuscript useful in your work, please consider citing:
+
+> Kartchner D., Deng J., Lohiya S., Kopparthi T., Bathala B, Daniel Domingo-Fernández†, Cassie S. Mitchell† (2023).
+A Comprehensive Evaluation of Biomedical Entity Linking Models. *Empirical Methods in Natural Language Processing (EMNLP) 2023*.
+
+## Installation
 In order to run this benchmark, please install the following conda environment:
 
 ```bash
@@ -17,7 +23,7 @@ If you wish to run the notebooks, also run:
 ipykernel install el-robustness
 ```
 
-# Datasets
+## Datasets
 <!-- | Dataset | Source Ongologies | Num. Abstracts | Num. Mentions | In context? |
 | MedMentions [(Mohan and Li, 2019)](https://github.com/chanzuckerberg/MedMentions) | UMLS | 4,392 | ? | Yes |  -->
 | Dataset                                                                                                            | Total Documents | Total Mentions | Unique Entities | Unique Types | Entity Overlap | Mention Overlap | Source Documents | Linked Ontology |
@@ -38,7 +44,7 @@ pip install -e .
 git checkout fix_data_inconsistencies
 ```
 
-# Ontologies
+## Ontologies
 Many of the ontologies in this benchmark are derived from UMLS.  UMLS is licensed by the National Library of Medicine and requires a free account to download.  You can sign up for an account at https://uts.nlm.nih.gov/uts/signup-login.  Once your account has been approved, you can download the UMLS metathesaurus at https://www.nlm.nih.gov/research/umls/licensedcontent/umlsknowledgesources.html.
 
 This benchmnark also uses the NCBI Gene (Entrez) ontololgy.  It can be downloaded with the command:
@@ -46,7 +52,7 @@ This benchmnark also uses the NCBI Gene (Entrez) ontololgy.  It can be downloade
 wget https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/All_Data.gene_info.gz
 ```
 
-# Resolving abbreviations
+## Resolving abbreviations
 As a preprocessing step, we resolve abbreviations in the text using [Ab3P](https://github.com/ncbi-nlp/Ab3P), an abbreviation detector created for biomedical text. We ran abbreviation detection on the text of all documents in our benchmark, the results of which are stored in a large dictionary in `data/abbreviations.json`.  In order to reproduce our abbreviation detection/resolution pipeline, please run the following:
 
 ```bash
@@ -78,20 +84,20 @@ bash process_abbreviations.sh
 ```
 
 
-# Using UMLS Utilities
+## Using UMLS Utilities
 This repository contains some utilities for extracting of UMLS and mappings between UMLS CUIs and unique identifiers from its constituent vocabularies.  
 
 
-# Models Included
+## Models Included
 A number of models are included in this benchmark.  In order to make them as close to the original implementation as possible, we used much of the original source code modified to accomodate the our test datasets.  Instructions for installing each modified version as a submodule are provided below.
 
-## SapBERT
+### SapBERT
 **Install SapBERT**
 ```bash
 git clone git@github.com:enveda/sapbert.git
 ```
 
-### Usage
+#### Usage
 In order to run SapBERT, you will need a dictionary mapping entity CUIs (concept unique identifiers) to their aliases.  This should be provided in the format of a text file with one CUI/alias per line as follows:
 ```
 CUI1||alias1_1
@@ -135,8 +141,8 @@ CUDA_VISIBLE_DEVICES=0 python3 run_bigbio_inference.py \
         --abbreviations_path /efs/davidkartchner/el-robustness-comparison/data/abbreviations.json
 ```
 
-## KRISSBERT
-**Install KRISSBERT**
+### KRISSBERT
+#### Install KRISSBERT**
 ```bash
 git lfs install
 git clone https://huggingface.co/envedabio/krissbert
@@ -164,26 +170,16 @@ More information on KRISSBERT can be found in `krissbert/README.md`.
 
 
 
-## ArboEL
+### ArboEL
 ArboEL has dependencies that conflict with the rest of the packages in this repository so it needs its own conda environment.  To install this, please run the following:
 ```
 conda env create -f arboel.yaml
 ```
 
+### SciSpacy
 
+### BERN2
 
-## SciSpacy
+## Evaluation Strategy
 
-
-## BERN2
-
-
-
-
-
-
-# Evaluation Strategy
-
-
-
-# References
+## References
