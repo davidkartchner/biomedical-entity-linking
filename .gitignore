@@ -11,5 +11,3 @@ output/
 # Py Cache directory
 __pycache__/
 
-# Notebooks directory
-notebooks/
