@@ -21,7 +21,7 @@ class BiomedicalEntity:
 @dataclass
 class BiomedicalOntology:
     name: str
-    abbrev: Optional[str] = None                                                                  # Abbreviated name of ontology if different than name
+    abbrev: Optional[str] = None                                           # Abbreviated name of ontology if different than name
     types: List[str] = field(default_factory=list)                                          # List of all types in the ontology                                        
     entities: List[BiomedicalEntity] = field(default_factory=list)                          # List Containing all Biomedical Entity Objects
     mappings: dict = field(default_factory=dict)                                            # Dict mapping a cui to the index in entities
