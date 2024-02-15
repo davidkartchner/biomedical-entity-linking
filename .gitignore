@@ -1,0 +1,15 @@
+# General Temporary files
+*.log
+*.tmp
+
+# OS Specific Files
+.DS_Store
+
+# Output/Build directories
+output/
+
+# Py Cache directory
+__pycache__/
+
+# Notebooks directory
+notebooks/
