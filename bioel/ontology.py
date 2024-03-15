@@ -32,21 +32,56 @@ class BiomedicalOntology:
     entities: List[BiomedicalEntity] = field(default_factory=list) # Dict mapping CUI: BiomedicalEntity
     abbrev: Optional[str] = None # Abbreviated name of ontology if different than name
     metadata: Optional[dict] = None
+    
+    def get_canonical_name(self):
+        '''
+        Get name of entities in the ontology
+        data: list of dict
+        '''
+        canonical_names = {entity.cui: entity.name for entity in self.entities}
+        return canonical_names
+    
+    def get_aliases(self):
+        '''
+        Get aliases of entities in the ontology
+        data: list of dict
+        '''
+        aliases = {entity.cui: entity.aliases for entity in self.entities}
+        return aliases
+    
+    def get_definition(self):
+        '''
+        Get definition of entities in the ontology
+        data: list of dict
+        '''
+        definitions_dict = {entity.cui: entity.definition for entity in self.entities if entity.definition is not None}
+        return definitions_dict
+    
+    def get_types(self):
+        '''
+        Get type of entities in the ontology
+        data: list of dict
+        '''
+        # Extract tuples of CUI and types from the Data
+        types = {entity.cui: entity.types for entity in self.entities}
+        return types
 
-    def get_aliases(self, cui=None):
-        '''
-        Get aliases for a particular CUI.  If cui=None, provide a mapping of {cui: [aliases]}
-        '''
-        pass
 
-    def get_entities_with_alias(self, alias=None):
-        '''
-        Get all entities sharing a particular alias.  If alias=None, return a mapping of {alias: [cuis]}
-        '''
-        pass
+    # def get_aliases(self, cui=None):
+    #     '''
+    #     Get aliases for a particular CUI.  If cui=None, provide a mapping of {cui: [aliases]}
+    #     '''
+    #     pass
 
-    def get_definitions(self, cui):
-        pass
+    # def get_entities_with_alias(self, alias=None):
+    #     '''
+    #     Get all entities sharing a particular alias.  If alias=None, return a mapping of {alias: [cuis]}
+    #     '''
+    #     pass
+
+    # def get_definitions(self, cui):
+    #     pass
+
 
     @classmethod
     def load_obo(cls, filepath, name=None, prefix_to_keep=None, entity_type=None, abbrev=None):
