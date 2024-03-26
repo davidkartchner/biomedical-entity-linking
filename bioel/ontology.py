@@ -7,9 +7,11 @@ import obonet
 from .utils import _obo_extract_definition, _obo_extract_synonyms
 from .logger import setup_logger
 
+from collections import defaultdict
+from file_utils.file_cache import get_path
+import json
+
 logger = setup_logger()
-
-
 
 @dataclass
 class BiomedicalEntity:
@@ -32,6 +34,7 @@ class BiomedicalOntology:
     entities: List[BiomedicalEntity] = field(default_factory=list) # Dict mapping CUI: BiomedicalEntity
     abbrev: Optional[str] = None # Abbreviated name of ontology if different than name
     metadata: Optional[dict] = None
+    mappings: dict = field(default_factory=dict) # Dict mapping a cui to the index in entities
 
     def get_canonical_name(self):
         '''
@@ -155,8 +158,29 @@ class BiomedicalOntology:
     def load_csv(self):
         pass
 
-    def load_json(self):
-        pass
+    def load_json(self, file_path: Optional[str] = None):
+        '''
+        file_path: str, required.
+            The file path to the json/jsonl representation of the KB to load.
+        '''
+        if file_path is None:
+            raise ValueError(
+                "provide a valid path"
+            )
+        if file_path.endswith("jsonl"):
+            raw = (json.loads(line) for line in open(get_path(file_path)))
+        else:
+            raw = json.load(open(get_path(file_path)))
+
+        index = 0
+        for concept in raw:
+            self.types.append(concept["types"])
+            self.mappings[concept["concept_id"]] = index
+            index += 1
+            if 'definition' in concept:
+                self.entities.append(BiomedicalEntity(concept["concept_id"], concept["canonical_name"], concept["types"], concept["aliases"], concept["definition"]))
+            else:
+                self.entities.append(BiomedicalEntity(concept["concept_id"], concept["canonical_name"], concept["types"], concept["aliases"]))
 
 
 @dataclass
