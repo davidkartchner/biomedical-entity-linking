@@ -168,6 +168,7 @@ class BiomedicalOntology:
         Path to medic.tsv dataset
         """
 
+        # Attributes of the medic ontology
         key_dict = [
             "DiseaseName",
             "DiseaseID",
@@ -182,23 +183,17 @@ class BiomedicalOntology:
 
         # Open the TSV file
         with open(path, newline="") as tsvfile:
-            # Create a CSV reader specifying the delimiter as a tab character
             reader = csv.reader(tsvfile, delimiter="\t")
 
-            # Initialize a counter
-            counter = 0
+            counter = 0  # First entity in the tsv file appears in line 29
 
             ontology = []
-            # Iterate over the rows in the file
             for row in reader:
                 dict = {}
-                # Print the current row
                 if counter > 28:
                     for i, elements in enumerate(row):
                         dict[key_dict[i]] = elements
-
                     ontology.append(dict)
-                # Increment the counter
                 counter += 1
 
         for element in ontology:
@@ -209,6 +204,7 @@ class BiomedicalOntology:
             for alt_id in alt_ids:
                 if alt_id not in equivalant_cuis and alt_id[:2] != "DO":
                     equivalant_cuis.append(alt_id)
+
             entity = BiomedicalEntity(
                 cui=element["DiseaseID"],
                 name=element["DiseaseName"],
