@@ -165,7 +165,7 @@ class BiomedicalOntology:
     def load_medic(self, path):
         """
         path : str
-        Path to medic.tsv dataset
+            Path to medic.tsv dataset
         """
 
         # Attributes of the medic ontology
