@@ -207,7 +207,7 @@ class BiomedicalOntology:
             other_aliases = [x for x in mesh_to_alias[cui] if x != name]
             joined_aliases = " ; ".join(other_aliases)
             entity = BiomedicalEntity(
-                cui=f"MESH:{cui}",
+                cui=cui,
                 name=name,
                 types=ent_type,
                 aliases=joined_aliases,
