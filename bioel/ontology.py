@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field, asdict
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 from tqdm import tqdm
 
 import obonet
@@ -31,7 +31,7 @@ class BiomedicalEntity:
 class BiomedicalOntology:
     name: str
     types: List[str] = field(default_factory=list)
-    entities: List[BiomedicalEntity] = field(default_factory=list) # Dict mapping CUI: BiomedicalEntity
+    entities: Dict[str, BiomedicalEntity] = field(default_factory=dict) # Dict mapping CUI: BiomedicalEntity
     abbrev: Optional[str] = None # Abbreviated name of ontology if different than name
     metadata: Optional[dict] = None
 
@@ -80,7 +80,7 @@ class BiomedicalOntology:
             prefix_to_keep: str (optional)
         '''
 
-        entities = []
+        entities = {}
         if entity_type:
             types = [entity_type]
         else:
@@ -128,7 +128,11 @@ class BiomedicalOntology:
 
             
             ent = BiomedicalEntity(cui=curie, name=ent_name, aliases=other_synonyms, types=types, definition=definition, equivalant_cuis=alt_cuis)
-            entities.append(ent)
+            if curie in entities:
+                logger.warning(f"Duplicate CUI {curie} found in ontology.  Skipping.")
+                continue
+            
+            entities[curie] = ent
 
         if not name :
             if filepath.startswith('http'):
@@ -151,7 +155,7 @@ class BiomedicalOntology:
             api_key: str (optional)
         '''
 
-        entities = []
+        entities = {}
         types = []
 
         logger.info(f'Reading UMLS from {filepath}')
@@ -184,7 +188,11 @@ class BiomedicalOntology:
                     'group': row['group'],
                 }
             )
-            entities.append(entity)
+            if row['cui'] in entities:
+                logger.warning(f"Duplicate CUI {row['cui']} found in ontology.  Skipping.")
+                continue
+            
+            entities[row['cui']] = entity
             types.append(row['tui'])
         
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)

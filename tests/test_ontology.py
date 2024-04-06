@@ -21,7 +21,7 @@ class TestOntology(unittest.TestCase):
 
         for case in tqdm(test_cases):
             ontology = BiomedicalOntology.load_umls(**case)
-            print(ontology.entities[:5])
+            print(list(ontology.entities.values())[:5])
             self.check_multiprefix(ontology)
             self.check_unique_cui(ontology)
 
@@ -62,7 +62,7 @@ class TestOntology(unittest.TestCase):
 
         for case in tqdm(test_cases):
             ontology = BiomedicalOntology.load_obo(**case)
-            print(ontology.entities[:5])
+            print(list(ontology.entities.values())[:5])
             self.check_multiprefix(ontology)
             self.check_unique_cui(ontology)
 
@@ -74,7 +74,7 @@ class TestOntology(unittest.TestCase):
         '''
         error_raised = False
         errors = []
-        for entity in ontology.entities:
+        for cui, entity in ontology.entities.items():
             if len(entity.cui.split(':')) > 2:
                 raise AssertionError(f"Entities should only have one prefix, but the entity {entity.cui} has more than 1")    
 
@@ -82,7 +82,7 @@ class TestOntology(unittest.TestCase):
         '''
         Make sure all CUIs in ontology are unique
         '''
-        cuis = [x.cui for x in ontology.entities]
+        cuis = [entity.cui for cui, entity in ontology.entities.items()]
         if len(cuis) != len(set(cuis)):
             raise AssertionError("Ontology contains duplicate CUIs")
 
