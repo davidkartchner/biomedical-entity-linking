@@ -10,6 +10,9 @@ from bioel.ontology import BiomedicalOntology
 class TestOntology(unittest.TestCase):
 
     def test_umls_loader(self):
+        """
+        TestCase - 1: Read from the local UMLS Directory and check for data formatting issues in the entities.
+        """
         test_cases = [{
             'filepath': '/mitchell/entity-linking/2017AA/META/',
             'name': 'UMLS', 
