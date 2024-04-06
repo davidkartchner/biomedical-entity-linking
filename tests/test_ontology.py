@@ -9,6 +9,23 @@ from bioel.ontology import BiomedicalOntology
 
 class TestOntology(unittest.TestCase):
 
+    def test_umls_loader(self):
+        """
+        TestCase - 1: Read from the local UMLS Directory and check for data formatting issues in the entities.
+        """
+        test_cases = [{
+            'filepath': '/mitchell/entity-linking/2017AA/META/',
+            'name': 'UMLS', 
+            'abbrev': None
+        }]
+
+        for case in tqdm(test_cases):
+            ontology = BiomedicalOntology.load_umls(**case)
+            print(list(ontology.entities.values())[:5])
+            self.check_multiprefix(ontology)
+            self.check_unique_cui(ontology)
+
+    
     def test_obo_loader(self):
 
         test_cases = [{'filepath': 'https://raw.githubusercontent.com/DiseaseOntology/HumanDiseaseOntology/main/src/ontology/doid.obo',
@@ -45,7 +62,7 @@ class TestOntology(unittest.TestCase):
 
         for case in tqdm(test_cases):
             ontology = BiomedicalOntology.load_obo(**case)
-            print(ontology.entities[:5])
+            print(list(ontology.entities.values())[:5])
             self.check_multiprefix(ontology)
             self.check_unique_cui(ontology)
 
@@ -57,16 +74,19 @@ class TestOntology(unittest.TestCase):
         '''
         error_raised = False
         errors = []
-        for entity in ontology.entities:
+        for cui, entity in ontology.entities.items():
             if len(entity.cui.split(':')) > 2:
-                raise AssertionError(f"Entities should only have one prefix, but the entity {cui} has more than 1")    
+                raise AssertionError(f"Entities should only have one prefix, but the entity {entity.cui} has more than 1")    
 
     def check_unique_cui(self, ontology: BiomedicalOntology):
         '''
         Make sure all CUIs in ontology are unique
         '''
-        cuis = [x.cui for x in ontology.entities]
+        cuis = [entity.cui for cui, entity in ontology.entities.items()]
         if len(cuis) != len(set(cuis)):
             raise AssertionError("Ontology contains duplicate CUIs")
+
+if __name__ == '__main__':
+    unittest.main()
         
 
