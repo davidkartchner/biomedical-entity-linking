@@ -82,7 +82,7 @@ def get_context_representation(
     # Tokenization of context
     context_left = sample[context_key + "_left"]  # = sample["context_left"]
     context_left = tokenizer.tokenize(context_left)  # tokenize the sentences
-    context_right = sample[context_key + "_right"]
+    context_right = sample[context_key + "_right"]  # = sample["context_right"]
     context_right = tokenizer.tokenize(context_right)
 
     # D2 Quota Calculation for left and right context

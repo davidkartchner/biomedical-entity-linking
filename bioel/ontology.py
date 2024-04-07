@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field, asdict
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 from tqdm import tqdm
 
 import obonet
@@ -32,8 +32,8 @@ class BiomedicalEntity:
 class BiomedicalOntology:
     name: str
     types: List[str] = field(default_factory=list)
-    entities: List[BiomedicalEntity] = field(
-        default_factory=list
+    entities: Dict[str, BiomedicalEntity] = field(
+        default_factory=dict
     )  # Dict mapping CUI: BiomedicalEntity
     abbrev: Optional[str] = None  # Abbreviated name of ontology if different than name
     metadata: Optional[dict] = None

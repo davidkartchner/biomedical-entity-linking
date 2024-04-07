@@ -38,12 +38,12 @@ def process_medic_ontology(ontology, data_path, ontology_dir):
         Path to medic ontology
     """
 
-    ontology = BiomedicalOntology(name="MEDIC")
-    ontology.load_medic(path=ontology_dir)
+    # Use the class method to load the MEDIC ontology and get a new instance of BiomedicalOntology
+    ontology = BiomedicalOntology.load_medic(filepath=ontology_dir, name="medic")
 
-    equivalent_cuis = False
-    if ontology.entities[0].equivalant_cuis is not None:
-        equivalent_cuis = True
+    # Check if equivalent CUIs are present for the first entity
+    first_entity_cui = next(iter(ontology.entities))
+    equivalent_cuis = bool(ontology.entities[first_entity_cui].equivalant_cuis)
 
     "If dictionary already processed, load it else process and load it"
     entity_dictionary_pkl_path = os.path.join(data_path, "dictionary.pickle")
@@ -56,7 +56,7 @@ def process_medic_ontology(ontology, data_path, ontology_dir):
         return entities, equivalent_cuis
 
     ontology_entities = []
-    for entity in tqdm(ontology.entities):
+    for cui, entity in tqdm(ontology.entities.items()):
         if entity.aliases != "":
             if entity.definition != "":
                 new_entity = {
@@ -278,12 +278,11 @@ def process_mesh_ontology(ontology, data_path, ontology_dir):
         Path to medic ontology
     """
 
-    ontology = BiomedicalOntology(name="mesh")
-    ontology.load_mesh(path=ontology_dir)
+    ontology = BiomedicalOntology.load_mesh(filepath=ontology_dir, name="mesh")
 
-    equivalent_cuis = False
-    if ontology.entities[0].equivalant_cuis is not None:
-        equivalent_cuis = True
+    # Check if equivalent CUIs are present for the first entity
+    first_entity_cui = next(iter(ontology.entities))
+    equivalent_cuis = bool(ontology.entities[first_entity_cui].equivalant_cuis)
 
     "If dictionary already processed, load it else process and load it"
     entity_dictionary_pkl_path = os.path.join(data_path, "dictionary.pickle")
@@ -296,7 +295,7 @@ def process_mesh_ontology(ontology, data_path, ontology_dir):
         return entities, equivalent_cuis
 
     ontology_entities = []
-    for entity in tqdm(ontology.entities):
+    for cui, entity in tqdm(ontology.entities.items()):
         if entity.aliases != "":
             if entity.definition != "":
                 new_entity = {
@@ -388,6 +387,10 @@ def process_mention_dataset(
         )
     elif ontology == "umls":
         entities, equivalant_cuis = process_umls_ontology(
+            ontology, data_path, ontology_dir
+        )
+    elif ontology == "mesh":
+        entities, equivalant_cuis = process_mesh_ontology(
             ontology, data_path, ontology_dir
         )
     else:

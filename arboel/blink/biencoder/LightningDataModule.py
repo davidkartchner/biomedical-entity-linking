@@ -650,31 +650,26 @@ class ArboelDataModule(L.LightningDataModule):
 
 
 def main():
-    # ontology = "medic"
-    # model = "arboel"
-    # dataset = "ncbi_disease"
-    # abs_path = "/home2/cye73/data"
-    # data_path = os.path.join(abs_path, model, dataset)
-    # print(data_path)
 
-    # ontology_type = "medic"
-    # ontology_dir = "/mitchell/entity-linking/kbs/medic.tsv"
-
-    ontology = "umls"
     model = "arboel"
-    dataset = "medmentions_st21pv"
+
+    dataset = "ncbi_disease"
     abs_path = "/home2/cye73/data"
     data_path = os.path.join(abs_path, model, dataset)
-    print(data_path)
-    abs_path2 = "/home2/cye73/results"
-    model_output_path = os.path.join(abs_path2, model, dataset)
-    ontology_dir = "/mitchell/entity-linking/2017AA/META/"
+
+    # dataset = "bc5cdr"
+    # abs_path = "/home2/cye73/data"
+    # data_path = os.path.join(abs_path, model, dataset)
+
+    # dataset = "medmentions_st21pv"
+    # abs_path = "/home2/cye73/data"
+    # data_path = os.path.join(abs_path, model, dataset)
 
     params_test = {
         "data_path": data_path,
         "batch_size": 64,
-        "max_context_length": 64,
-        "max_cand_length": 64,
+        "max_context_length": 128,
+        "max_cand_length": 128,
         "context_key": "context",
         "debug": False,
         "knn": 4,
@@ -689,10 +684,16 @@ def main():
         "drop_entities": False,
         "within_doc": True,
         "filter_unlabeled": False,
-        "ontology": "umls",
         "model": "arboel",
-        "dataset": "medmentions_st21pv",
-        "ontology_dir": "/mitchell/entity-linking/2017AA/META/",
+        # "ontology": "umls",
+        # "dataset": "medmentions_st21pv",
+        # "ontology_dir": "/mitchell/entity-linking/2017AA/META/",
+        "ontology": "medic",
+        "dataset": "ncbi_disease",
+        "ontology_dir": "/mitchell/entity-linking/kbs/medic.tsv",
+        # "ontology": "mesh",
+        # "dataset": "bc5cdr",
+        # "ontology_dir": "/mitchell/entity-linking/2017AA/META/",
         "silent": False,
     }
 
