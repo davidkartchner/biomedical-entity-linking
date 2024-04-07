@@ -8,7 +8,7 @@ from collections import defaultdict
 from tqdm.auto import tqdm
 
 sys.path.append("..")
-from umls_utils import UmlsMappings
+from bioel.utils.umls_utils import UmlsMappings
 
 
 logger = logging.getLogger()
