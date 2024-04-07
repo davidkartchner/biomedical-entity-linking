@@ -2,15 +2,13 @@ from dataclasses import dataclass, field, asdict
 from typing import List, Optional, Union, Dict
 from tqdm import tqdm
 
+from bioel.logger import setup_logger
+
 import obonet
-
-from .utils.obo_utils import _obo_extract_definition, _obo_extract_synonyms
-from .logger import setup_logger
-
-from .utils.umls_utils import UmlsMappings
+from bioel.utils.obo_utils import _obo_extract_definition, _obo_extract_synonyms
+from bioel.utils.umls_utils import UmlsMappings
 
 logger = setup_logger()
-
 
 @dataclass
 class BiomedicalEntity:
