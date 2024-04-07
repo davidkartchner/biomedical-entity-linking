@@ -162,11 +162,22 @@ class BiomedicalOntology:
         # for key
         pass
 
-    def load_medic(self, path):
+    @classmethod
+    def load_medic(cls, filepath, name=None, abbrev=None, api_key=""):
         """
-        path : str
-            Path to medic.tsv dataset
+        Read medic ontology
+
+        Parameters:
+        ----------------------
+            filepath: str (Pointing to the medic directory)
+            name: str (optional)
+            abbrev: str (optional)
+            api_key: str (optional)
         """
+        entities = {}
+        types = []
+
+        logger.info(f"Reading medic from {filepath}")
 
         # Attributes of the medic ontology
         key_dict = [
@@ -182,7 +193,7 @@ class BiomedicalOntology:
         ]
 
         # Open the TSV file
-        with open(path, newline="") as tsvfile:
+        with open(filepath, newline="") as tsvfile:
             reader = csv.reader(tsvfile, delimiter="\t")
 
             counter = 0  # First entity in the tsv file appears in line 29
@@ -213,7 +224,10 @@ class BiomedicalOntology:
                 definition=element["Definition"],
                 equivalant_cuis=equivalant_cuis,
             )
-            self.entities.append(entity)
+            entities[element["DiseaseID"]] = entity
+
+            types.append("Disease")
+        return cls(entities=entities, types=types, name=name, abbrev=abbrev)
 
     def load_umls(self, umls_dir):
         pass
