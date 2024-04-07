@@ -5,9 +5,10 @@ from tqdm import tqdm
 import obonet
 import csv
 
-from .utils import _obo_extract_definition, _obo_extract_synonyms
+from .utils.obo_utils import _obo_extract_definition, _obo_extract_synonyms
 from .logger import setup_logger
-from umls_utils import UmlsMappings
+
+from .utils.umls_utils import UmlsMappings
 
 logger = setup_logger()
 
@@ -163,73 +164,6 @@ class BiomedicalOntology:
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
 
     @classmethod
-    def load_medic(cls, filepath, name=None, abbrev=None, api_key=""):
-        """
-        Read medic ontology
-
-        Parameters:
-        ----------------------
-            filepath: str (Pointing to the medic directory)
-            name: str (optional)
-            abbrev: str (optional)
-            api_key: str (optional)
-        """
-        entities = {}
-        types = []
-
-        logger.info(f"Reading medic from {filepath}")
-
-        # Attributes of the medic ontology
-        key_dict = [
-            "DiseaseName",
-            "DiseaseID",
-            "AltDiseaseIDs",
-            "Definition",
-            "ParentIDs",
-            "TreeNumbers",
-            "ParentTreeNumbers",
-            "Synonyms",
-            "SlimMappings",
-        ]
-
-        # Open the TSV file
-        with open(filepath, newline="") as tsvfile:
-            reader = csv.reader(tsvfile, delimiter="\t")
-
-            counter = 0  # First entity in the tsv file appears in line 29
-
-            ontology = []
-            for row in reader:
-                dict = {}
-                if counter > 28:
-                    for i, elements in enumerate(row):
-                        dict[key_dict[i]] = elements
-                    ontology.append(dict)
-                counter += 1
-
-        for element in ontology:
-            equivalant_cuis = [element["DiseaseID"]]
-            alt_ids = (
-                element["AltDiseaseIDs"].split("|") if element["AltDiseaseIDs"] else []
-            )
-            for alt_id in alt_ids:
-                if alt_id not in equivalant_cuis and alt_id[:2] != "DO":
-                    equivalant_cuis.append(alt_id)
-
-            entity = BiomedicalEntity(
-                cui=element["DiseaseID"],
-                name=element["DiseaseName"],
-                types="Disease",
-                aliases=element["Synonyms"],
-                definition=element["Definition"],
-                equivalant_cuis=equivalant_cuis,
-            )
-            entities[element["DiseaseID"]] = entity
-
-            types.append("Disease")
-        return cls(entities=entities, types=types, name=name, abbrev=abbrev)
-
-    @classmethod
     def load_umls(cls, filepath, name=None, abbrev=None, api_key=""):
         """
         Read an ontology from the UMLS Directory
@@ -298,6 +232,73 @@ class BiomedicalOntology:
             entities[row["cui"]] = entity
             types.append(row["tui"])
 
+        return cls(entities=entities, types=types, name=name, abbrev=abbrev)
+
+    @classmethod
+    def load_medic(cls, filepath, name=None, abbrev=None, api_key=""):
+        """
+        Read medic ontology
+
+        Parameters:
+        ----------------------
+            filepath: str (Pointing to the medic directory)
+            name: str (optional)
+            abbrev: str (optional)
+            api_key: str (optional)
+        """
+        entities = {}
+        types = []
+
+        logger.info(f"Reading medic from {filepath}")
+
+        # Attributes of the medic ontology
+        key_dict = [
+            "DiseaseName",
+            "DiseaseID",
+            "AltDiseaseIDs",
+            "Definition",
+            "ParentIDs",
+            "TreeNumbers",
+            "ParentTreeNumbers",
+            "Synonyms",
+            "SlimMappings",
+        ]
+
+        # Open the TSV file
+        with open(filepath, newline="") as tsvfile:
+            reader = csv.reader(tsvfile, delimiter="\t")
+
+            counter = 0  # First entity in the tsv file appears in line 29
+
+            ontology = []
+            for row in reader:
+                dict = {}
+                if counter > 28:
+                    for i, elements in enumerate(row):
+                        dict[key_dict[i]] = elements
+                    ontology.append(dict)
+                counter += 1
+
+        for element in ontology:
+            equivalant_cuis = [element["DiseaseID"]]
+            alt_ids = (
+                element["AltDiseaseIDs"].split("|") if element["AltDiseaseIDs"] else []
+            )
+            for alt_id in alt_ids:
+                if alt_id not in equivalant_cuis and alt_id[:2] != "DO":
+                    equivalant_cuis.append(alt_id)
+
+            entity = BiomedicalEntity(
+                cui=element["DiseaseID"],
+                name=element["DiseaseName"],
+                types="Disease",
+                aliases=element["Synonyms"],
+                definition=element["Definition"],
+                equivalant_cuis=equivalant_cuis,
+            )
+            entities[element["DiseaseID"]] = entity
+
+            types.append("Disease")
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
 
     @classmethod
