@@ -1,6 +1,9 @@
 import unittest
 import numpy as np
 
+import sys
+
+sys.path.append("..")
 # from types import ModuleType
 from tqdm import tqdm
 
@@ -23,6 +26,24 @@ class TestOntology(unittest.TestCase):
 
         for case in tqdm(test_cases):
             ontology = BiomedicalOntology.load_medic(**case)
+            print(list(ontology.entities.values())[:5])
+            self.check_multiprefix(ontology)
+            self.check_unique_cui(ontology)
+
+    def test_mesh_loader(self):
+        """
+        TestCase - 1: Read from the local UMLS Directory and check for data formatting issues in the entities.
+        """
+        test_cases = [
+            {
+                "filepath": "/mitchell/entity-linking/2017AA/META/",
+                "name": "MESH",
+                "abbrev": None,
+            }
+        ]
+
+        for case in tqdm(test_cases):
+            ontology = BiomedicalOntology.load_mesh(**case)
             print(list(ontology.entities.values())[:5])
             self.check_multiprefix(ontology)
             self.check_unique_cui(ontology)

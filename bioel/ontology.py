@@ -12,6 +12,7 @@ from .utils.umls_utils import UmlsMappings
 
 logger = setup_logger()
 
+
 @dataclass
 class BiomedicalEntity:
     """
@@ -32,15 +33,10 @@ class BiomedicalEntity:
 class BiomedicalOntology:
     name: str
     types: List[str] = field(default_factory=list)
-<<<<<<< HEAD
-    entities: List[BiomedicalEntity] = field(
-        default_factory=list
+    entities: Dict[str, BiomedicalEntity] = field(
+        default_factory=dict
     )  # Dict mapping CUI: BiomedicalEntity
     abbrev: Optional[str] = None  # Abbreviated name of ontology if different than name
-=======
-    entities: Dict[str, BiomedicalEntity] = field(default_factory=dict) # Dict mapping CUI: BiomedicalEntity
-    abbrev: Optional[str] = None # Abbreviated name of ontology if different than name
->>>>>>> 0da52f5b0d6df7e88535bf61ce847917825c8cc1
     metadata: Optional[dict] = None
 
     def get_canonical_name(self):
@@ -143,7 +139,6 @@ class BiomedicalOntology:
             # Get definition if it exists
             definition = _obo_extract_definition(data)
 
-<<<<<<< HEAD
             ent = BiomedicalEntity(
                 cui=curie,
                 name=ent_name,
@@ -152,16 +147,11 @@ class BiomedicalOntology:
                 definition=definition,
                 equivalant_cuis=alt_cuis,
             )
-            entities.append(ent)
-=======
-            
-            ent = BiomedicalEntity(cui=curie, name=ent_name, aliases=other_synonyms, types=types, definition=definition, equivalant_cuis=alt_cuis)
             if curie in entities:
                 logger.warning(f"Duplicate CUI {curie} found in ontology.  Skipping.")
                 continue
-            
+
             entities[curie] = ent
->>>>>>> 0da52f5b0d6df7e88535bf61ce847917825c8cc1
 
         if not name:
             if filepath.startswith("http"):
@@ -173,7 +163,6 @@ class BiomedicalOntology:
 
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
 
-<<<<<<< HEAD
         # synonyms = _obo_term_to_synonyms(ontology, filter_prefix=prefix_to_keep)
         # definitions = _obo_term_to_definitions(ontology, filter_prefix=prefix_to_keep)
         # for key
@@ -246,12 +235,9 @@ class BiomedicalOntology:
             types.append("Disease")
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
 
-    def load_umls(self, umls_dir):
-        pass
-=======
     @classmethod
-    def load_umls(cls, filepath, name = None, abbrev = None, api_key = ""):
-        '''
+    def load_umls(cls, filepath, name=None, abbrev=None, api_key=""):
+        """
         Read an ontology from the UMLS Directory
 
         Parameters:
@@ -260,13 +246,13 @@ class BiomedicalOntology:
             name: str (optional)
             abbrev: str (optional)
             api_key: str (optional)
-        '''
+        """
 
         entities = {}
         types = []
 
-        logger.info(f'Reading UMLS from {filepath}')
-        umls = UmlsMappings(umls_dir = filepath, umls_api_key=api_key)
+        logger.info(f"Reading UMLS from {filepath}")
+        umls = UmlsMappings(umls_dir=filepath, umls_api_key=api_key)
 
         # Get the Canonial Names
         lowercase = False
@@ -276,39 +262,123 @@ class BiomedicalOntology:
             lowercase=lowercase,
         )
 
-        # Group by the canonical names to group the alias and types 
-        all_umls_df = umls.umls.query('lang == "ENG"').groupby('cui').agg({'alias': lambda x: list(set(x)), 'tui':'first', 'group': 'first', 'def':'first'}).reset_index()
-        all_umls_df['name'] = all_umls_df.cui.map(umls_to_name)
-        all_umls_df['alias'] = all_umls_df[['name','alias']].apply(lambda x: list(set(x[1]) - set([x[0]])) , axis=1)
-        all_umls_df['cui'] = all_umls_df['cui'].map(lambda x: 'UMLS:' + x)
-        all_umls_df['has_definition'] = all_umls_df['def'].map(lambda x: x is not None)
-        all_umls_df['num_aliases'] = all_umls_df['alias'].map(lambda x: len(x))
+        # Group by the canonical names to group the alias and types
+        all_umls_df = (
+            umls.umls.query('lang == "ENG"')
+            .groupby("cui")
+            .agg(
+                {
+                    "alias": lambda x: list(set(x)),
+                    "tui": "first",
+                    "group": "first",
+                    "def": "first",
+                }
+            )
+            .reset_index()
+        )
+        all_umls_df["name"] = all_umls_df.cui.map(umls_to_name)
+        all_umls_df["alias"] = all_umls_df[["name", "alias"]].apply(
+            lambda x: list(set(x[1]) - set([x[0]])), axis=1
+        )
+        all_umls_df["cui"] = all_umls_df["cui"].map(lambda x: "UMLS:" + x)
+        all_umls_df["has_definition"] = all_umls_df["def"].map(lambda x: x is not None)
+        all_umls_df["num_aliases"] = all_umls_df["alias"].map(lambda x: len(x))
 
         for index, row in all_umls_df.iterrows():
             entity = BiomedicalEntity(
-                cui = row['cui'],
-                name = row['name'],
-                types = row['tui'],
-                aliases = row['alias'],
-                definition = row['def'],
-                metadata = {
-                    'group': row['group'],
-                }
+                cui=row["cui"],
+                name=row["name"],
+                types=row["tui"],
+                aliases=row["alias"],
+                definition=row["def"],
+                metadata={
+                    "group": row["group"],
+                },
             )
-            if row['cui'] in entities:
-                logger.warning(f"Duplicate CUI {row['cui']} found in ontology.  Skipping.")
+            if row["cui"] in entities:
+                logger.warning(
+                    f"Duplicate CUI {row['cui']} found in ontology.  Skipping."
+                )
                 continue
-            
-            entities[row['cui']] = entity
-            types.append(row['tui'])
-        
+
+            entities[row["cui"]] = entity
+            types.append(row["tui"])
+
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
-        
 
->>>>>>> 0da52f5b0d6df7e88535bf61ce847917825c8cc1
+    @classmethod
+    def load_mesh(cls, filepath, name=None, abbrev=None, api_key=""):
+        """
+        Read an ontology from the MESH Directory
 
-    def load_mesh(self, mesh_dir):
-        pass
+        Parameters:
+        ----------------------
+            filepath: str (Pointing to the UMLS directory)
+            name: str (optional)
+            abbrev: str (optional)
+            api_key: str (optional)
+        """
+
+        entities = {}
+        types = []
+
+        logger.info(f"Reading MESH from {filepath}")
+        umls = UmlsMappings(umls_dir=filepath, umls_api_key=api_key)
+
+        # Get the Canonial Names
+        lowercase = False
+        mesh_to_name = umls.get_canonical_name(
+            ontologies_to_include=["MSH"],
+            use_umls_curies=False,
+            mapping_cols={"MSH": "sdui"},
+            prefixes={"MSH": "MESH"},
+            lowercase=lowercase,
+        )
+
+        mesh_to_alias = umls.get_aliases(
+            ontologies_to_include=["MSH"],
+            use_umls_curies=False,
+            mapping_cols={"MSH": "sdui"},
+            prefixes={"MSH": "MESH"},
+            lowercase=lowercase,
+        )
+
+        mesh_cui2definition = umls.get_definition(
+            ontologies_to_include=["MSH"],
+            use_umls_curies=False,
+            mapping_cols={"MSH": "sdui"},
+            prefixes={"MSH": "MESH"},
+            lowercase=lowercase,
+        )
+
+        mesh_to_types, mesh_to_groups = umls.get_types_and_groups(
+            ontologies_to_include=["MSH"],
+            use_umls_curies=False,
+            mapping_cols={"MSH": "sdui"},
+            prefixes={"MSH": "MESH"},
+            lowercase=lowercase,
+        )
+
+        for cui, name in tqdm(mesh_to_name.items()):
+            ent_type = mesh_to_types[cui]
+            other_aliases = [x for x in mesh_to_alias[cui] if x != name]
+            joined_aliases = " ; ".join(other_aliases)
+            entity = BiomedicalEntity(
+                cui=cui,
+                name=name,
+                types=ent_type,
+                aliases=joined_aliases,
+                definition=(
+                    mesh_cui2definition[cui] if cui in mesh_cui2definition else None
+                ),
+                metadata={
+                    "group": mesh_to_groups[cui],
+                },
+            )
+            entities[cui] = entity
+            types.append(ent_type)
+
+        return cls(entities=entities, types=types, name=name, abbrev=abbrev)
 
     def load_ncbi_taxon(self):
         pass
