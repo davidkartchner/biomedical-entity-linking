@@ -119,35 +119,12 @@ class BiEncoderRanker(torch.nn.Module):
         self.START_TOKEN = "[CLS]"
         self.END_TOKEN = "[SEP]"
 
-        # vocab_path = os.path.join(params["bert_model"], "vocab.txt")  # DD3
-        # if os.path.isfile(vocab_path):
-        #     print(f"Found tokenizer vocabulary at {vocab_path}")
-        # self.tokenizer = AutoTokenizer.from_pretrained(
-        #     vocab_path if os.path.isfile(vocab_path) else params["bert_model"],
-        #     do_lower_case=params["lowercase"],
-        # )
-
-        # First try to load the tokens from a local file. If local file not found, uses a pre-trained model specified by params["bert_model"]
-
         # init bi-encoder model and stores it in self.model
         self.build_model()
 
         # model_path = params.get("path_to_biencoder_model", params.get("path_to_model"))
         # if model_path:
         #     self.load_model(model_path)
-
-        """
-        model_path = params.get("path_to_biencoder_model")
-        if model_path is None:
-            model_path = params.get("path_to_model")
-        if model_path is not None:
-            self.load_model(model_path)
-        """
-        # RR1
-        # self.model = self.model.to(self.device)
-        # self.data_parallel = params.get("data_parallel")
-        # if self.data_parallel:
-        #     self.model = torch.nn.DataParallel(self.model) #DD5
 
     def load_model(self, fname, cpu=False):
         """
@@ -322,8 +299,8 @@ class BiEncoderRanker(torch.nn.Module):
 
         if random_negs:
             # train on random negatives
-            ####### There might be an issue here : .mm() expects both operands to be 2D matrices and embedding_cands is a 3D tensor
-            ####### It's probably because we always train it on hard negatives
+            ####### Issue here : .mm() expects both operands to be 2D matrices and embedding_cands is a 3D tensor
+            ####### Not used because we always train on hard negatives
             return embedding_ctxt.mm(embedding_cands.t())
         else:
             # train on hard negatives
@@ -348,7 +325,10 @@ class BiEncoderRanker(torch.nn.Module):
         only_logits=False,
     ):
         """
-        Params :
+        Computes the loss and score of the model for a batch of data
+
+        Parameters
+        ----------
         - context_input : Tensor of dim (batch_size, sequence_length)
         Token INDICES representing the context inputs
         - cand_input : Tensor of dim (batch_size, sequence_length)
@@ -363,61 +343,44 @@ class BiEncoderRanker(torch.nn.Module):
         Flag to return only the logits (scores) without computing the loss. Useful for evaluation or inference.
         """
         if mst_data is not None:
-            # print("Start context embedding in loss / reranker forward")
-            # print("context_input size :", context_input.size())
             context_embeds = self.encode_context(
                 context_input, requires_grad=True
             ).unsqueeze(
                 2
             )  # batchsize x embed_size x 1
-            # print("context_embeds size :", context_embeds.size())
-            # print("End context embedding in loss / reranker forward")
 
-            # print("Start entity embedding in loss / reranker forward")
             pos_embeds = mst_data["positive_embeds"].unsqueeze(
                 1
             )  # batchsize x 1 x embed_size # this is POSITIVE EMBEDDING !
-            # print("pos_embeds :", pos_embeds.size())
+
             neg_dict_embeds = self.encode_candidate(
                 mst_data["negative_dict_inputs"], requires_grad=True
             )  # (batchsize*knn_dict) x embed_size : need reshaping
-            # print("neg_dict_embeds :", neg_dict_embeds.size())
 
             neg_dict_embeds = neg_dict_embeds.view(
                 context_embeds.shape[0],
                 neg_dict_embeds.shape[0] // context_embeds.shape[0],
                 neg_dict_embeds.shape[1],
             )  # batchsize x knn_dict x embed_size
-            # print("neg_dict_embeds :", neg_dict_embeds.size())
-            # print("End entity embedding in loss / reranker forward")
 
             cand_embeds = torch.cat(
                 (pos_embeds, neg_dict_embeds), dim=1
             )  # batchsize x knn_dict+1 x embed_size
-            # print("cand_embeds :", cand_embeds.size())
 
             if mst_data["negative_men_inputs"] is not None:
-                # print('Inside if mst_data["negative_men_inputs"] is not None')
-                # print(
-                #     'mst_data["negative_men_inputs"] size :',
-                #     len(mst_data["negative_men_inputs"]),
-                # )
                 neg_men_embeds = self.encode_context(
                     mst_data["negative_men_inputs"], requires_grad=True
                 )  # (batchsize*knn_men) x embed_size
-                # print("neg_men_embeds :", neg_men_embeds.size())
 
                 neg_men_embeds = neg_men_embeds.view(
                     context_embeds.shape[0],
                     neg_men_embeds.shape[0] // context_embeds.shape[0],
                     neg_men_embeds.shape[1],
                 )  # batchsize x knn_men x embed_size
-                # print("neg_men_embeds :", neg_men_embeds.size())
 
                 cand_embeds = torch.cat(
                     (cand_embeds, neg_men_embeds), dim=1
                 )  # batchsize x (knn_men + knn_ent + 1) x embed_size #DD12
-                # print("cand_embeds :", cand_embeds.size())
 
             # Compute scores
             scores = torch.bmm(cand_embeds, context_embeds)  # batchsize x topk x 1
@@ -433,8 +396,6 @@ class BiEncoderRanker(torch.nn.Module):
 
         if label_input is None:
             target = torch.LongTensor(torch.arange(bs))
-            # RR1
-            # target = target.to(self.device)
             ###### The target is np.array([0,1, ..., bs-1]) which is clearly not the real target.
             ###### This if is probably never used as we are interested in the mst performance.
             loss = F.cross_entropy(

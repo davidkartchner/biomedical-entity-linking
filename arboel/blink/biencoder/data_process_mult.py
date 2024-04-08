@@ -296,9 +296,7 @@ def process_mention_data(
             continue
 
         record = {
-            "mention_id": sample.get(
-                "mention_id", idx
-            ),  # DD3 An identifier for the mention
+            "mention_id": sample.get("mention_id", idx),
             "mention_name": sample["mention"],  # The actual text of the mention
             "context": context_tokens,  # Contains the tokenized version of (mention + surrounding context + special tokens)
             "n_labels": len(
@@ -306,11 +304,7 @@ def process_mention_data(
             ),  # Number of labels associated with the mention
             # An array of indices pointing to the entities in the entity dictionary that are considered correct labels for the mention.
             # This array is padded with -1 to reach a length of knn, which facilitates operations that consider a fixed number of potential labels for each mention
-            "label_idxs": record_labels
-            + [-1]
-            * (
-                knn - len(record_labels)
-            ),  # knn-length array with the starting elements representing the ground truth, and -1 elsewhere
+            "label_idxs": record_labels + [-1] * (knn - len(record_labels)),
             "label_cuis": record_cuis,  # CUIs associated with the correct labels for the mention
             "type": sample["type"],  # Represents the type of entity or mention
         }
@@ -338,8 +332,8 @@ def process_mention_data(
 
     # Tensor Dataset Creation :
     # Converts processed samples into PyTorch tensors for model input.
-    context_vecs = torch.tensor(  # select_field : use of our first function !
-        select_field(processed_samples, "context", "ids"),  # DD4
+    context_vecs = torch.tensor(
+        select_field(processed_samples, "context", "ids"),
         dtype=torch.long,
     )
     label_idxs = torch.tensor(
@@ -352,12 +346,9 @@ def process_mention_data(
     )
     mention_idx = torch.arange(len(n_labels), dtype=torch.long)
 
-    tensor_data = TensorDataset(
-        context_vecs, label_idxs, n_labels, mention_idx
-    )  # DD5 #DD6
+    tensor_data = TensorDataset(context_vecs, label_idxs, n_labels, mention_idx)
 
-    # Output : Returns the processed samples, updated entity dictionary, and tensor dataset
-    return processed_samples, entity_dictionary, tensor_data  # DD6A #DD6B #DD6C
+    return processed_samples, entity_dictionary, tensor_data
 
 
 def compute_gold_clusters(mention_data):

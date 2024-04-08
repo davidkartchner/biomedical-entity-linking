@@ -751,7 +751,7 @@ def loss_function(
     Parameters
     ----------
     - reranker : BiEncoderRanker
-        NN-based ranking model
+        biencoder model
     - params : dict
         Contains most of the relevant keys for training (embed_batch_size, batch_size, n_gpu, force_exact_search etc...)
     - forward_output : dict
@@ -886,7 +886,7 @@ class LitArboel(L.LightningModule):
         - negative_men_inputs : Tensor
             Tensor of negative mention inputs. Shape: (filtered_batch_size * knn_men,)
         - negative_dict_inputs : Tensor
-            Tensor of negative dictionary (entity) inputs. Shape: (filtered_batch_size * knn_dict,)
+            Tensor of negative dictionary (entity) inputs. Shape: (filtered_batch_size * knn_dict)
         - positive_embeds : Tensor
             Tensor of embeddings for the positive examples. Shape: (filtered_batch_size, embedding_dim)
         - skipped : int
@@ -903,7 +903,7 @@ class LitArboel(L.LightningModule):
         mention_embeddings = self.train_men_embeds[mention_idxs.cpu()]
         if len(mention_embeddings.shape) == 1:
             mention_embeddings = np.expand_dims(mention_embeddings, axis=0)
-        # # Convert Back to Tensor and Move to GPU
+        # Convert Back to Tensor and Move to GPU
         mention_embeddings = torch.from_numpy(mention_embeddings).to(self.device)
 
         positive_idxs = []
@@ -953,12 +953,10 @@ class LitArboel(L.LightningModule):
                 sim_order = 1 if self.hparams["farthest_neighbor"] else -1
 
                 for cluster_ent in gold_idxs:
-                    # CC12 IDs of all the mentions inside the gold cluster with entity id = "cluster_ent"
+                    # IDs of all the mentions inside the gold cluster with entity id = "cluster_ent"
                     cluster_mens = self.trainer.datamodule.train_gold_clusters[
                         cluster_ent
                     ]
-
-                    # print("cluster_mens :", cluster_mens)
 
                     if self.hparams["within_doc"]:
                         # Filter the gold cluster to within-doc
@@ -970,13 +968,13 @@ class LitArboel(L.LightningModule):
                             doc_id_list=self.trainer.datamodule.train_context_doc_ids,
                         )
 
-                    # weights for all the mention-entity links inside the cluster of the current mention
+                    # ψ(e, mi) = Enc_E(e)^T Enc_M(mi) for all the mention-entity links inside the cluster of the current mention
                     to_ent_data = (
                         self.train_men_embeds[cluster_mens]
                         @ self.train_dict_embeds[cluster_ent].T
                     )
 
-                    # weights for all the mention-mention links inside the cluster of the current mention
+                    # φ(mi, mj) = Enc_M(mi)^T Enc_M(mj) for all the mention-mention links inside the cluster of the current mention
                     to_men_data = (
                         self.train_men_embeds[cluster_mens]
                         @ self.train_men_embeds[cluster_mens].T
@@ -996,7 +994,7 @@ class LitArboel(L.LightningModule):
                         # Add mention-entity link
                         rows.append(from_node)
                         cols.append(to_node)
-                        data.append(-1 * to_ent_data[i])
+                        data.append(-1 * to_ent_data[i]) # w_e,mi = - ψ(e, mi)
                         if self.hparams["gold_arbo_knn"] is None:
                             # Add forward and reverse mention-mention links over the entire MST
                             for j in range(i + 1, len(cluster_mens)):
@@ -1005,9 +1003,8 @@ class LitArboel(L.LightningModule):
                                     score = to_men_data[i, j]
                                     rows.append(from_node)
                                     cols.append(to_node)
-                                    data.append(
-                                        -1 * score
-                                    )  # Negatives needed for SciPy's Minimum Spanning Tree computation
+                                    # w_i,j = -ψ(mi, mj)
+                                    data.append(-1 * score) # Negatives needed for SciPy's Minimum Spanning Tree computation
                                     seen.add((from_node, to_node))
                                     seen.add((to_node, from_node))
                         else:
@@ -1385,7 +1382,6 @@ class LitArboel(L.LightningModule):
                 self.men_embeds_by_type = self.train_men_embeds[
                     self.train_men_idxs_by_type[entity_type]
                 ]
-                print("entity_type :", entity_type)
                 _, self.dict_nns_by_type = self.train_dict_indexes[entity_type].search(
                     self.men_embeds_by_type, n_ent_to_fetch
                 )
@@ -1672,11 +1668,6 @@ torch.set_float32_matmul_precision("medium")
 
 # To use with parser in command line
 def main(args):
-
-    # args["train_batch_size"] = (
-    #     args["train_batch_size"] // args["gradient_accumulation_steps"]
-    # )
-
     data_module = ArboelDataModule(params=args)
 
     model = LitArboel(params=args)
