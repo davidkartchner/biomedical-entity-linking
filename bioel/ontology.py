@@ -163,11 +163,6 @@ class BiomedicalOntology:
 
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
 
-        # synonyms = _obo_term_to_synonyms(ontology, filter_prefix=prefix_to_keep)
-        # definitions = _obo_term_to_definitions(ontology, filter_prefix=prefix_to_keep)
-        # for key
-        pass
-
     @classmethod
     def load_medic(cls, filepath, name=None, abbrev=None, api_key=""):
         """
@@ -230,9 +225,17 @@ class BiomedicalOntology:
                 definition=element["Definition"],
                 equivalant_cuis=equivalant_cuis,
             )
+
+            if element["DiseaseID"] in entities:
+                logger.warning(
+                    f"Duplicate CUI {element['DiseaseID']} found in ontology.  Skipping."
+                )
+                continue
+
             entities[element["DiseaseID"]] = entity
 
             types.append("Disease")
+
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
 
     @classmethod
@@ -375,6 +378,11 @@ class BiomedicalOntology:
                     "group": mesh_to_groups[cui],
                 },
             )
+
+            if cui in entities:
+                logger.warning(f"Duplicate CUI {cui} found in ontology.  Skipping.")
+                continue
+
             entities[cui] = entity
             types.append(ent_type)
 
