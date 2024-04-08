@@ -4,7 +4,7 @@ import numpy as np
 import sys
 
 sys.path.append("..")
-# from types import ModuleType
+
 from tqdm import tqdm
 
 from bioel.ontology import BiomedicalOntology
