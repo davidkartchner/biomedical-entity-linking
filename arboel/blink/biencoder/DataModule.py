@@ -12,10 +12,11 @@ from typing import Optional
 from bigbio.dataloader import BigBioConfigHelpers
 
 sys.path.append("../../..")
-from umls_utils import UmlsMappings
+from bioel.utils.umls_utils import UmlsMappings
 from bigbio_utils import CUIS_TO_REMAP, CUIS_TO_EXCLUDE, VALIDATION_DOCUMENT_IDS
 from bigbio_utils import dataset_to_documents, dataset_to_df
 from bioel.ontology import BiomedicalOntology
+
 
 conhelps = BigBioConfigHelpers()
 

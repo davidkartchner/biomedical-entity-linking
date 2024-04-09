@@ -33,15 +33,10 @@ class BiomedicalEntity:
 class BiomedicalOntology:
     name: str
     types: List[str] = field(default_factory=list)
-<<<<<<< HEAD
     entities: Dict[str, BiomedicalEntity] = field(
         default_factory=dict
     )  # Dict mapping CUI: BiomedicalEntity
     abbrev: Optional[str] = None  # Abbreviated name of ontology if different than name
-=======
-    entities: Dict[str, BiomedicalEntity] = field(default_factory=dict) # Dict mapping CUI: BiomedicalEntity
-    abbrev: Optional[str] = None # Abbreviated name of ontology if different than name
->>>>>>> 0da52f5b0d6df7e88535bf61ce847917825c8cc1
     metadata: Optional[dict] = None
 
     def get_canonical_name(self):
@@ -144,7 +139,6 @@ class BiomedicalOntology:
             # Get definition if it exists
             definition = _obo_extract_definition(data)
 
-<<<<<<< HEAD
             ent = BiomedicalEntity(
                 cui=curie,
                 name=ent_name,
@@ -157,14 +151,6 @@ class BiomedicalOntology:
                 logger.warning(f"Duplicate CUI {curie} found in ontology.  Skipping.")
                 continue
 
-=======
-            
-            ent = BiomedicalEntity(cui=curie, name=ent_name, aliases=other_synonyms, types=types, definition=definition, equivalant_cuis=alt_cuis)
-            if curie in entities:
-                logger.warning(f"Duplicate CUI {curie} found in ontology.  Skipping.")
-                continue
-            
->>>>>>> 0da52f5b0d6df7e88535bf61ce847917825c8cc1
             entities[curie] = ent
 
         if not name:
@@ -178,19 +164,6 @@ class BiomedicalOntology:
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
 
     @classmethod
-<<<<<<< HEAD
-    def load_umls(cls, filepath, name=None, abbrev=None, api_key=""):
-        """
-        Read an ontology from the UMLS Directory
-
-        Parameters:
-        ----------------------
-            filepath: str (Pointing to the UMLS directory)
-            name: str (optional)
-            abbrev: str (optional)
-            api_key: str (optional)
-        """
-=======
     def load_umls(cls, filepath, name = None, abbrev = None, api_key = ""):
         '''
         Read an ontology from the UMLS Directory
@@ -246,7 +219,6 @@ class BiomedicalOntology:
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
         
 
->>>>>>> 0da52f5b0d6df7e88535bf61ce847917825c8cc1
 
         entities = {}
         types = []
