@@ -459,7 +459,7 @@ class BlinkParser(argparse.ArgumentParser):
             "--experiment",
             default=None,
             type=str,
-            help="Name of th experiment for AimLogger",
+            help="Name of the experiment for AimLogger",
         )
 
     def add_eval_args(self, args=None):

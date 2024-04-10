@@ -994,7 +994,7 @@ class LitArboel(L.LightningModule):
                         # Add mention-entity link
                         rows.append(from_node)
                         cols.append(to_node)
-                        data.append(-1 * to_ent_data[i]) # w_e,mi = - ψ(e, mi)
+                        data.append(-1 * to_ent_data[i])  # w_e,mi = - ψ(e, mi)
                         if self.hparams["gold_arbo_knn"] is None:
                             # Add forward and reverse mention-mention links over the entire MST
                             for j in range(i + 1, len(cluster_mens)):
@@ -1004,7 +1004,9 @@ class LitArboel(L.LightningModule):
                                     rows.append(from_node)
                                     cols.append(to_node)
                                     # w_i,j = -ψ(mi, mj)
-                                    data.append(-1 * score) # Negatives needed for SciPy's Minimum Spanning Tree computation
+                                    data.append(
+                                        -1 * score
+                                    )  # Negatives needed for SciPy's Minimum Spanning Tree computation
                                     seen.add((from_node, to_node))
                                     seen.add((to_node, from_node))
                         else:

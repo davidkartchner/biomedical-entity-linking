@@ -2,13 +2,16 @@ import sys
 
 sys.path.append("../..")
 import os
+
+current_path = os.getcwd()
+print(current_path)
 from blink.common.params import BlinkParser
 
 import lightning as L
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-from LightningDataModule import ArboelDataModule
-from LightningModule import LitArboel
+from blink.biencoder.LightningModule import LitArboel
+from blink.biencoder.LightningDataModule import ArboelDataModule
 
 
 def main(args):

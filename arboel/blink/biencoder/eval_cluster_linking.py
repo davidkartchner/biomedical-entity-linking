@@ -10,6 +10,7 @@ import os
 import sys
 
 sys.path.append("../..")
+sys.path.append("blink/biencoder")
 import json
 import math
 import time
