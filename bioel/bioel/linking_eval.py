@@ -10,7 +10,7 @@ from tqdm.auto import tqdm
 from collections import defaultdict
 from matplotlib import pyplot as plt
 
-from bigbio_utils import (
+from bioel.utils.bigbio_utils import (
     dataset_to_df,
     DATASET_NAMES,
     CUIS_TO_EXCLUDE,
@@ -19,7 +19,7 @@ from bigbio_utils import (
     dataset_to_documents,
     load_bigbio_dataset,
 )
-from dataset_consts import dataset_to_pretty_name, model_to_pretty_name, model_to_color
+from bioel.utils.dataset_consts import dataset_to_pretty_name, model_to_pretty_name, model_to_color
 
 sns.set()
 sns.set_style("whitegrid")
