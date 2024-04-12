@@ -1,9 +1,9 @@
-from bioel.models.arboel.LightningModule import ArboelDataModule, LitArboel
+from bioel.models.arboel.model.LightningModule import ArboelDataModule, LitArboel
 from datetime import datetime
 from lightning.pytorch.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 import lightning as L
-from bioel.models.arboel.common.params import BlinkParser
+from bioel.models.arboel.model.common.params import BlinkParser
 
 
 def main(args):

@@ -1,10 +1,10 @@
-from bioel.models.arboel.common.params import BlinkParser
+from bioel.models.arboel.model.common.params import BlinkParser
 
 import lightning as L
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-from bioel.models.arboel.LightningModule import ArboelDataModule, LitArboel
-from bioel.models.arboel.LightningDataModule import ArboelDataModule
+from bioel.models.arboel.model.LightningModule import ArboelDataModule, LitArboel
+from bioel.models.arboel.data.LightningDataModule import ArboelDataModule
 
 
 def main(args):
