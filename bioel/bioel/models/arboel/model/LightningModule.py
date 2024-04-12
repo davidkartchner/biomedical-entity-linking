@@ -1171,9 +1171,6 @@ class LitArboel(L.LightningModule):
         }
 
     def training_step(self, batch, batch_idx):
-        # print(f"Batch Index: {batch_idx}, Batch Size: {len(batch[0])}")
-
-        # Initialize the parameters
         # batch is a subsample from tensor_dataset
         batch_context_inputs, candidate_idxs, n_gold, mention_idxs = batch
 

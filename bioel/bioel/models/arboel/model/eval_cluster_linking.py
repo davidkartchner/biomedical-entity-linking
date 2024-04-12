@@ -61,15 +61,11 @@ def get_query_nn(
         similarity scores of the nearest neighbors, sorted in descending order
     """
     # To accomodate the approximate-nature of the knn procedure, retrieve more samples and then filter down
-    k = (
-        searchK if searchK is not None else max(16, 2 * knn)
-    )  # 'is not None' not necessary
+    k = searchK if searchK is not None else max(16, 2 * knn)
 
     # Find k nearest neighbours of the query
     _, nn_idxs = index.search(q_embed, k)
-    nn_idxs = nn_idxs.astype(
-        np.int64
-    ).flatten()  # 2D array of dim = (1, k) --> 1D array of dim = (k,)
+    nn_idxs = nn_idxs.astype(np.int64).flatten()
     if type_idx_mapping is not None:
         nn_idxs = type_idx_mapping[nn_idxs]
     nn_embeds = torch.tensor(embeds[nn_idxs]).cuda()
@@ -78,7 +74,7 @@ def get_query_nn(
     scores = torch.flatten(torch.mm(torch.tensor(q_embed).cuda(), nn_embeds.T)).cpu()
 
     # Sort the candidates by descending order of scores
-    nn_idxs, scores = zip(*sorted(zip(nn_idxs, scores), key=lambda x: -x[1]))  # CC1 DD1
+    nn_idxs, scores = zip(*sorted(zip(nn_idxs, scores), key=lambda x: -x[1]))
 
     if gold_idxs is not None:
         # Calculate the knn index at which the gold cui is found (-1 if not found)
@@ -194,8 +190,7 @@ def analyzeClusters(clusters, dictionary, queries, knn, n_train_mentions=0):
         _debug_clusters_w_mult_entities,
     ) = (0, 0, 0)
 
-    print("Analyzing clusters...")
-    for cluster in clusters.values():  # CC4 Scans all the values in clusters
+    for cluster in clusters.values():
         "Evaluate entity"
         # The lowest value in the cluster should always be the entity
         pred_entity_idx = cluster[0]
@@ -237,7 +232,7 @@ def analyzeClusters(clusters, dictionary, queries, knn, n_train_mentions=0):
             report_obj = {
                 "mention_id": men_query["mention_id"],
                 "mention_name": men_query["mention_name"],
-                "mention_gold_cui": "|".join(men_golden_cuis),  # CC5
+                "mention_gold_cui": "|".join(men_golden_cuis),
                 "mention_gold_cui_name": "|".join(
                     [
                         dictionary[i]["title"]
@@ -260,7 +255,6 @@ def analyzeClusters(clusters, dictionary, queries, knn, n_train_mentions=0):
         f"{results['accuracy'] / float(_debug_n_mens_evaluated) * 100} %"
     )
     print(f"Accuracy = {results['accuracy']}")
-    # print('1st element of results["failure"] :', results["failure"][0])
 
     # Run sanity checks
     assert n_mentions == _debug_n_mens_evaluated

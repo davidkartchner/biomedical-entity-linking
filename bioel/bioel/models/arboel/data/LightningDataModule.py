@@ -139,7 +139,6 @@ class ArboelDataModule(L.LightningDataModule):
         # Create the entity data files: dictionary.pickle
         # Create the mentions data files:  train.jsonl, valid.jsonl, test.jsonl
 
-        print("prepare_data is being executed")
         # path to a file where the training data is stored
         self.train_data = os.path.join(self.data_path, "train.jsonl")
 
@@ -158,7 +157,6 @@ class ArboelDataModule(L.LightningDataModule):
         """
         For processing and splitting. Called at the beginning of fit (train + validate), test, or predict.
         """
-        print("setup() is being executed")
 
         "entity dictionary"
         # if entity dictionary already tokenized (=add tokens and idx keys), load it
@@ -533,7 +531,6 @@ class ArboelDataModule(L.LightningDataModule):
 
         if self.hparams["within_doc"]:
             logger.info("within_doc")
-            # RR9 : If path exist, train_samples, valid_samples, test_samples haven't been defined yet
             # Store the context_doc_id for every mention in the train and valid sets
             if self.train_samples is None:
                 self.train_samples, _ = read_data("train", self.hparams, logger)
@@ -549,52 +546,8 @@ class ArboelDataModule(L.LightningDataModule):
                 self.test_samples, _ = read_data("test", self.hparams, logger)
             self.test_context_doc_ids = [s["context_doc_id"] for s in self.test_samples]
 
-        # print(
-        #     f"entity_dictionary : {self.entity_dictionary[0]}, size : {len(self.entity_dictionary)}, type : {type(self.entity_dictionary)}"
-        # )
-
-        # print(
-        #     f"train_samples : {self.train_samples[0]}, size : {len(self.train_samples)}, type : {type(self.train_processed_data)}"
-        # )
-        # print(
-        #     f"valid_samples :{self.valid_samples[0]}, size : {len(self.valid_samples)}, type : {type(self.train_processed_data)}"
-        # )
-        # print(
-        #     f"test_samples : {self.test_samples[0]}, size : {len(self.test_samples)}, type : {type(self.train_processed_data)}"
-        # )
-
-        # print(
-        #     f"train_processed_data : {self.train_processed_data[0]} , size : {len(self.train_processed_data)}, type : {type(self.train_processed_data)} "
-        # )
-        # print(
-        #     f"valid_processed_data : {self.valid_processed_data[0]} , size : {len(self.valid_processed_data)}, type : {type(self.valid_processed_data)}"
-        # )
-        # print(
-        #     f"test_processed_data : {self.test_processed_data[0]} , size : {len(self.test_processed_data)}, type : {type(self.test_processed_data)}"
-        # )
-
-        # print(
-        #     f"train_tensor_data : {self.train_tensor_data[0]} , size : {len(self.train_tensor_data)}, type : {type(self.train_tensor_data)}"
-        # )
-        # print(
-        #     f"valid_tensor_data : {self.valid_tensor_data[0]} , size : {len(self.valid_tensor_data)}, type : {type(self.valid_tensor_data)}"
-        # )
-        # print(
-        #     f"test_tensor_data : {self.test_tensor_data[0]} , size : {len(self.test_tensor_data)}, type : {type(self.test_tensor_data)}"
-        # )
-
-        # print(
-        #     f"train_men_vecs : {self.train_men_vecs[0]} , size : {self.train_men_vecs.size}, type : {type(self.train_men_vecs)}"
-        # )
-        # print(
-        #     f"entity_dict_vecs : {self.train_men_vecs[0]} , size :{self.entity_dict_vecs.size}, type : {type(self.entity_dict_vecs)}"
-        # )
-
-    def train_dataloader(self):  # RR5
-        print("train_dataloader() is being executed")
+    def train_dataloader(self):
         # Return the training DataLoader
-        # train_sampler = RandomSampler(self.train_tensor_data) if self.params["shuffle"] else SequentialSampler(self.train_tensor_data)
-        # return DataLoader(self.train_tensor_data, sampler=train_sampler, batch_size=self.batch_size) #DD4
         return DataLoader(
             self.train_tensor_data,
             batch_size=self.batch_size,
