@@ -11,6 +11,7 @@ from bioel.utils.umls_utils import UmlsMappings
 
 logger = setup_logger()
 
+
 @dataclass
 class BiomedicalEntity:
     """
@@ -161,14 +162,6 @@ class BiomedicalOntology:
 
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
 
-<<<<<<< Updated upstream:bioel/bioel/ontology.py
-=======
-        # synonyms = _obo_term_to_synonyms(ontology, filter_prefix=prefix_to_keep)
-        # definitions = _obo_term_to_definitions(ontology, filter_prefix=prefix_to_keep)
-        # for key
-        pass
-
->>>>>>> Stashed changes:bioel/ontology.py
     @classmethod
     def load_medic(cls, filepath, name=None, abbrev=None, api_key=""):
         """
@@ -231,13 +224,6 @@ class BiomedicalOntology:
                 definition=element["Definition"],
                 equivalant_cuis=equivalant_cuis,
             )
-<<<<<<< Updated upstream:bioel/bioel/ontology.py
-=======
-            entities[element["DiseaseID"]] = entity
-
-            types.append("Disease")
-        return cls(entities=entities, types=types, name=name, abbrev=abbrev)
->>>>>>> Stashed changes:bioel/ontology.py
 
             if element["DiseaseID"] in entities:
                 logger.warning(
