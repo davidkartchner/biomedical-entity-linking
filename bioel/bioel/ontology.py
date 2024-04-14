@@ -1,13 +1,17 @@
 from dataclasses import dataclass, field, asdict
 from typing import List, Optional, Union, Dict
+from collections import defaultdict
 from tqdm import tqdm
 
 from bioel.logger import setup_logger
 
 import obonet
 import csv
+import json
 from bioel.utils.obo_utils import _obo_extract_definition, _obo_extract_synonyms
 from bioel.utils.umls_utils import UmlsMappings
+from bioel.utils.file_cache import get_path
+
 
 logger = setup_logger()
 
@@ -392,9 +396,44 @@ class BiomedicalOntology:
     def load_csv(self):
         pass
 
-    def load_json(self):
-        pass
+    @classmethod
+    def load_json(cls, filepath, name=None):
+        '''
+        file_path: str, required.
+            The file path to the json/jsonl representation of the KB to load.
+        name: str, optional.
+            The ontology name to load.
+        '''
+        if filepath is None:
+            raise ValueError(
+                "provide a valid path"
+            )
+        if filepath.endswith("jsonl"):
+            raw = (json.loads(line) for line in open(get_path(filepath)))
+        else:
+            raw = json.load(open(get_path(filepath)))
 
+        logger.info(f"Reading the given Json ontology from {filepath}")
+        
+        index = 0
+        types = []
+        entities = {}
+        metadata ={}
+        if name is None:
+            name = "json_onto"
+        for concept in raw:
+            types.append(concept["types"])
+            metadata[concept["concept_id"]] = index
+            index += 1
+            if concept["concept_id"] in entities:
+                logger.warning(f"Duplicate CUI {cui} found in ontology.  Skipping.")
+                continue
+            elif 'definition' in concept:
+                entities[concept["concept_id"]] = BiomedicalEntity(concept["concept_id"], concept["canonical_name"], concept["types"], concept["aliases"], concept["definition"])
+            else:
+                entities[concept["concept_id"]] = BiomedicalEntity(concept["concept_id"], concept["canonical_name"], concept["types"], concept["aliases"])
+                
+        return cls(entities = entities, types = types, metadata = metadata, name = name)
 
 @dataclass
 class CompositeOntology:
