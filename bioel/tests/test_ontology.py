@@ -26,6 +26,23 @@ class TestOntology(unittest.TestCase):
             self.check_multiprefix(ontology)
             self.check_unique_cui(ontology)
 
+    def test_json_loader(self):
+        """
+        TestCase - 1: Read from the Json/Jsonl Ontology Directory and check for data formatting issues in the entities.
+        """
+        test_cases = [
+            {
+                "filepath": "https://ai2-s2-scispacy.s3-us-west-2.amazonaws.com/data/kbs/2023-04-23/umls_mesh_2022.jsonl",
+                "name": "MESH",
+            }
+        ]
+
+        for case in tqdm(test_cases):
+            ontology = BiomedicalOntology.load_json(**case)
+            print(list(ontology.entities.values())[:5])
+            self.check_multiprefix(ontology)
+            self.check_unique_cui(ontology)
+    
     def test_mesh_loader(self):
         """
         TestCase - 1: Read from the local UMLS Directory and check for data formatting issues in the entities.
@@ -43,7 +60,7 @@ class TestOntology(unittest.TestCase):
             print(list(ontology.entities.values())[:5])
             self.check_multiprefix(ontology)
             self.check_unique_cui(ontology)
-
+    
     def test_umls_loader(self):
         """
         TestCase - 1: Read from the local UMLS Directory and check for data formatting issues in the entities.
@@ -61,7 +78,7 @@ class TestOntology(unittest.TestCase):
             print(list(ontology.entities.values())[:5])
             self.check_multiprefix(ontology)
             self.check_unique_cui(ontology)
-
+    
     def test_obo_loader(self):
 
         test_cases = [
@@ -110,7 +127,7 @@ class TestOntology(unittest.TestCase):
             print(list(ontology.entities.values())[:5])
             self.check_multiprefix(ontology)
             self.check_unique_cui(ontology)
-
+    
     def check_multiprefix(self, ontology: BiomedicalOntology):
         """
         Make each entity has a single prefix
