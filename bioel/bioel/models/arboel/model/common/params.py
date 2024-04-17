@@ -135,17 +135,16 @@ class BlinkParser(argparse.ArgumentParser):
             help="The full path to the bi-encoder model to load for cross-encoder candidate generation.",
         )
         parser.add_argument(
-            "--bert_model",
+            "--model_name_or_path",
             default="bert-base-uncased",
             type=str,
-            help="Bert pre-trained model selected in the list: bert-base-uncased, "
-            "bert-large-uncased, bert-base-cased, bert-base-multilingual, bert-base-chinese.",
+            help="pre-trained model",
         )
         parser.add_argument(
             "--pull_from_layer",
             type=int,
             default=-1,
-            help="Layers to pull from BERT",
+            help="Layers to pull from",
         )
         parser.add_argument(
             "--lowercase",
@@ -162,7 +161,7 @@ class BlinkParser(argparse.ArgumentParser):
         parser.add_argument(
             "--add_linear",
             action="store_true",
-            help="Whether to add an additonal linear projection on top of BERT.",
+            help="Whether to add an additonal linear projection on top of the model.",
         )
         parser.add_argument(
             "--data_path",
@@ -309,7 +308,7 @@ class BlinkParser(argparse.ArgumentParser):
             "--type_optimization",
             type=str,
             default="all_encoder_layers",
-            help="Which type of layers to optimize in BERT",
+            help="Which type of layers to optimize in the model",
         )
         parser.add_argument(
             "--shuffle",
