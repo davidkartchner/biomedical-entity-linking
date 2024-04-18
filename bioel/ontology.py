@@ -10,6 +10,7 @@ from .utils import _obo_extract_definition, _obo_extract_synonyms
 from .logger import setup_logger
 
 logger = setup_logger()
+tqdm.pandas()
 
 
 @dataclass
@@ -45,18 +46,41 @@ class BiomedicalOntology:
 
         self.mapping = mapping
 
+    def __len__(self):
+        return len(self.entities)
+
     def __getitem__(self, key):
-        try:
-            index = self.mapping[key]
-            return self.entities[index]
-        except:
-            raise KeyError(f"CUI '{key}' not found in ontology")
+        if type(key) == str:
+            try:
+                index = self.mapping[key]
+                return self.entities[index]
+            except:
+                raise KeyError(f"CUI '{key}' not found in ontology")
+
+        elif type(key) == int:
+            try:
+                return self.entities[index]
+
+            except:
+                raise IndexError(
+                    f"Entity index out of range.  There are {self.__len__()} entities in the ongology.  To access an entity by its CUI, pass the key in as a string, e.g. `BiomedicalOntology[key]`"
+                )
 
     def get_aliases(self, cui=None):
         """
         Get aliases for a particular CUI.  If cui=None, provide a mapping of {cui: [aliases]}
         """
-        pass
+        if cui:
+            if type(cui) != str:
+                raise TypeError("CUI must be a string")
+            ent = self[cui]
+            return list(set([ent.name] + ent.aliases))
+
+        else:
+            alias_dict = {
+                ent.cui: list(set([ent.name] + ent.aliases)) for ent in self.entities
+            }
+            return alias_dict
 
     def get_entities_with_alias(self, alias=None):
         """
@@ -153,7 +177,8 @@ class BiomedicalOntology:
     def load_umls(self, umls_dir):
         pass
 
-    def load_mesh(self, mesh_dir):
+    @classmethod
+    def load_mesh(cls):
         raise NotImplementedError
 
     @classmethod
@@ -279,10 +304,10 @@ class BiomedicalOntology:
 
         # Initialize Ontology
         entities = [BiomedicalEntity(**x) for x in records]
-        name = "ncbigene"
+        name = "NCBIGene"
         abbrev = "ncbigene"
 
-        return cls(entities=entities, types=all_types, name="NCBI Gene", abbrev=abbrev)
+        return cls(entities=entities, types=all_types, name=name, abbrev=abbrev)
 
     def to_df(self):
         records = self.to_records()

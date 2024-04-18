@@ -4,6 +4,7 @@ import ujson
 from collections import defaultdict
 import pandas as pd
 from bigbio.dataloader import BigBioConfigHelpers
+from datasets import load_dataset
 
 from dataset_consts import *
 
@@ -96,6 +97,7 @@ def dataset_to_df(
     cuis_to_exclude: list = None,
     val_split_ids: list = None,
     # abbreviations_dict: dict = None,
+    drop_nonnormalized=True,
 ):
     """
     Convert BigBio dataset to pandas DataFrame
@@ -131,8 +133,9 @@ def dataset_to_df(
         for doc in dataset[split]:
             pmid = doc["document_id"]
             for e in doc["entities"]:
-                if len(e["normalized"]) == 0:
-                    continue
+                if drop_nonnormalized:
+                    if len(e["normalized"]) == 0:
+                        continue
                 text = " ".join(e["text"])
                 # abbreviation_resolved = False
                 offsets = ";".join(
@@ -156,8 +159,9 @@ def dataset_to_df(
                     new_db_ids = [x for x in db_ids if x not in cuis_to_exclude]
                 else:
                     new_db_ids = db_ids
-                if len(new_db_ids) == 0:
-                    continue
+                if drop_nonnormalized:
+                    if len(new_db_ids) == 0:
+                        continue
 
                 # Add mention + metadata to list of mentions
                 all_lines.append(
@@ -215,9 +219,9 @@ def dataset_to_df(
     # Split off validation set if not given
     if val_split_ids is not None:
         print(type(val_split_ids[0]), type(deduplicated["document_id"][0]))
-        deduplicated.loc[
-            deduplicated["document_id"].isin(val_split_ids), "split"
-        ] = "validation"
+        deduplicated.loc[deduplicated["document_id"].isin(val_split_ids), "split"] = (
+            "validation"
+        )
 
     return deduplicated
 
@@ -263,7 +267,7 @@ def resolve_abbreviation(document_id, text, abbreviations_dict):
         return text
 
 
-def load_dataset_df(name, add_unabbreviated_forms=False):
+def load_dataset_df(name, add_unabbreviated_forms=False, drop_nonnormalized=True):
     """
     Load bigbio dataset and turn into pandas dataframe
     """
@@ -289,6 +293,7 @@ def load_dataset_df(name, add_unabbreviated_forms=False):
         entity_remapping_dict=remap,
         cuis_to_exclude=exclude,
         val_split_ids=validation_pmids,
+        drop_nonnormalized=drop_nonnormalized,
     )
 
     if add_unabbreviated_forms:
