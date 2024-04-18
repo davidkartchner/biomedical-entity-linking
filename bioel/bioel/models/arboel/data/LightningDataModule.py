@@ -117,7 +117,9 @@ class ArboelDataModule(L.LightningDataModule):
         self.data_path = self.hparams["data_path"]
         self.ontology_dir = self.hparams["ontology_dir"]
 
-        self.tokenizer = AutoTokenizer.from_pretrained(self.hparams["bert_model"])
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.hparams["model_name_or_path"]
+        )
 
         self.batch_size = self.hparams.get(
             "train_batch_size", self.hparams.get("scoring_batch_size")
@@ -599,7 +601,7 @@ def main():
         "context_key": "context",
         "debug": False,
         "knn": 4,
-        "bert_model": "dmis-lab/biobert-base-cased-v1.2",
+        "model_name_or_path": "dmis-lab/biobert-base-cased-v1.2",
         "out_dim": 768,
         "pull_from_layer": 11,
         "add_linear": True,

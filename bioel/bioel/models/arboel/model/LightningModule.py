@@ -508,6 +508,7 @@ def evaluate_test(
         for idx in range(len(nn_ent_idxs)):
             # Get nearest entity candidate
             dict_cand_idx = nn_ent_idxs[idx][0]
+            print("dict_cand_idx :", dict_cand_idx)
             dict_cand_score = nn_ent_dists[idx][0]
             # Compute recall metric
             gold_idxs = test_processed_data[idx]["label_idxs"][
@@ -657,38 +658,45 @@ def evaluate_test(
     ) / n_graphs_processed
     avg_per_graph_time = (knn_fetch_time + avg_graph_processing_time) / 60
 
-    # Store results
-    output_file_name = os.path.join(
-        output_path,
-        f"eval_results_{__import__('calendar').timegm(__import__('time').gmtime())}",
-    )
+    # # Store results
+    # output_file_name = os.path.join(
+    #     output_path,
+    #     f"eval_results_{__import__('calendar').timegm(__import__('time').gmtime())}",
+    # )
 
-    try:
-        for recall_k in recall_accuracy:
-            result_overview[f"recall@{recall_k}"] = recall_accuracy[recall_k]
-    except:
-        logger.info("Recall data not available since graphs were loaded from disk")
+    # try:
+    #     for recall_k in recall_accuracy:
+    #         result_overview[f"recall@{recall_k}"] = recall_accuracy[recall_k]
+    # except:
+    #     logger.info("Recall data not available since graphs were loaded from disk")
 
-    for mode in results:
-        mode_results = results[mode]
-        result_overview[mode] = {}
-        for r in mode_results:
-            k = r["knn_mentions"]
-            result_overview[mode][f"accuracy@knn{k}"] = r["accuracy"]
-            logger.info(f"{mode} accuracy@knn{k} = {r['accuracy']}")
-            output_file = f"{output_file_name}-{mode}-{k}.json"
-            with open(output_file, "w") as f:
-                json.dump(r, f, indent=2)
-                print(f"\nPredictions ({mode}) @knn{k} saved at: {output_file}")
-    with open(f"{output_file_name}.json", "w") as f:
-        json.dump(result_overview, f, indent=2)
-        print(f"\nPredictions overview saved at: {output_file_name}.json")
+    # for mode in results:
+    #     mode_results = results[mode]
+    #     result_overview[mode] = {}
+    #     for r in mode_results:
+    #         k = r["knn_mentions"]
+    #         result_overview[mode][f"accuracy@knn{k}"] = r["accuracy"]
+    #         logger.info(f"{mode} accuracy@knn{k} = {r['accuracy']}")
+    #         output_file = f"{output_file_name}-{mode}-{k}.json"
+    #         with open(output_file, "w") as f:
+    #             json.dump(r, f, indent=2)
+    #             print(f"\nPredictions ({mode}) @knn{k} saved at: {output_file}")
+    # with open(f"{output_file_name}.json", "w") as f:
+    #     json.dump(result_overview, f, indent=2)
+    #     print(f"\nPredictions overview saved at: {output_file_name}.json")
 
-    logger.info(
-        "\nThe avg. per graph evaluation time is {} minutes\n".format(
-            avg_per_graph_time
-        )
-    )
+    # # # Store results
+    # # eval_file_name = os.path.join(
+    # #     output_path,
+    # #     f"output_eval_{__import__('calendar').timegm(__import__('time').gmtime())}",
+    # # )
+    # # # with open(f"{eval_file_name}.json", "r") as f:
+
+    # logger.info(
+    #     "\nThe avg. per graph evaluation time is {} minutes\n".format(
+    #         avg_per_graph_time
+    #     )
+    # )
 
 
 def loss_function(
