@@ -14,7 +14,7 @@ from typing import Optional
 
 from torch.utils.data import DataLoader
 import bioel.models.arboel.data.data_process as data_process
-from bioel.models.arboel.data.DataModule import process_mention_dataset
+from bioel.models.arboel.data.data_utils import process_mention_dataset
 from bioel.models.arboel.model.eval_cluster_linking import filter_by_context_doc_id
 
 import logging

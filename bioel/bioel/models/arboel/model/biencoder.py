@@ -35,9 +35,9 @@ class BiEncoderModule(torch.nn.Module):
         """
         super(BiEncoderModule, self).__init__()
         ctxt_bert = AutoModel.from_pretrained(
-            params["bert_model"], return_dict=False
+            params["model_name_or_path"], return_dict=False
         )  # Could be a path containing config.json and pytorch_model.bin; or could be an id shorthand for a model that is loaded in the library
-        cand_bert = AutoModel.from_pretrained(params["bert_model"], return_dict=False)
+        cand_bert = AutoModel.from_pretrained(params["model_name_or_path"], return_dict=False)
         self.context_encoder = BertEncoder(
             ctxt_bert,
             params["out_dim"],
