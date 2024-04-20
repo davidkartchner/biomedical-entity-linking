@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import ujson
 import sys
 import time
 import itertools
@@ -10,9 +9,7 @@ import pickle
 from tqdm.auto import tqdm
 from collections import defaultdict
 from matplotlib import pyplot as plt
-from bigbio.dataloader import BigBioConfigHelpers
 
-sys.path.append("..")
 from bigbio_utils import (
     dataset_to_df,
     DATASET_NAMES,
@@ -20,10 +17,10 @@ from bigbio_utils import (
     CUIS_TO_REMAP,
     resolve_abbreviation,
     dataset_to_documents,
+    load_bigbio_dataset,
 )
 from dataset_consts import dataset_to_pretty_name, model_to_pretty_name, model_to_color
 
-conhelps = BigBioConfigHelpers()
 sns.set()
 sns.set_style("whitegrid")
 
