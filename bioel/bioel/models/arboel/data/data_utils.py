@@ -19,7 +19,7 @@ from bioel.utils.bigbio_utils import (
     dataset_to_df,
 )
 
-from bioel.utils.bigbio_utils import load_bigbio_dataset
+from bioel.utils.bigbio_utils import load_bigbio_dataset, resolve_abbreviation
 from bioel.ontology import BiomedicalOntology
 
 
@@ -345,10 +345,10 @@ def process_mention_dataset(
     ontology,
     dataset,
     data_path,
+    resolve_abbrevs=False,
+    path_to_abbrev=None,
     obo_dict: Optional[dict] = None,
     ontology_dir: Optional[str] = None,
-    mention_id: Optional[bool] = True,
-    context_doc_id: Optional[bool] = True,
 ):
     """
     This function prepares the mentions data :  Creates the train.jsonl, valid.jsonl, test.jsonl
@@ -374,7 +374,9 @@ def process_mention_dataset(
     - ontology_dir : str
     Path to the ontology (umls, medic etc...)
     """
-    data = load_bigbio_dataset(dataset)
+    data = load_bigbio_dataset(
+        dataset_name=dataset, abbrev=resolve_abbrevs, path_to_abbrev=path_to_abbrev
+    )
     exclude = CUIS_TO_EXCLUDE[dataset]
     remap = CUIS_TO_REMAP[dataset]
 
@@ -427,6 +429,8 @@ def process_mention_dataset(
     label_len = df["db_ids"].map(lambda x: len(x)).max()
     print("Max labels on one doc:", label_len)
 
+    abbrev_dict = ujson.load(open(path_to_abbrev))
+
     for split in df.split.unique():
         ents_in_split = []
         for d in tqdm(
@@ -438,6 +442,13 @@ def process_mention_dataset(
             doc_id = d["document_id"]
             doc = docs[doc_id]
             mention = d["text"]
+
+            # Resolve abbreviaions if desired
+            if resolve_abbrevs and abbrev_dict is not None:
+                deabbreviated_mention = resolve_abbreviation(
+                    doc_id, mention, abbrev_dict
+                )
+                abbrev_resolved = True
 
             # Get offsets and context
             start = offsets[0][0]  # start on the mention
@@ -474,20 +485,31 @@ def process_mention_dataset(
             output = [
                 {
                     "mention": mention,
+                    "mention_id": d["mention_id"],
                     "context_left": before_context,
                     "context_right": after_context,
+                    "context_doc_id": doc_id,
                     "type": d["type"][0],
                     "label_id": label_id,
-                    "label_title": entity_dictionary[label_id]["title"],
                     "label": entity_dictionary[label_id]["description"],
+                    "label_title": entity_dictionary[label_id]["title"],
                 }
             ]
 
-            if mention_id:
-                output[0]["mention_id"] = d.get("mention_id", None)
-
-            if context_doc_id:
-                output[0]["context_doc_id"] = d.get("document_id", None)
+            if abbrev_resolved:
+                output.append(
+                    {
+                        "mention": deabbreviated_mention,
+                        "mention_id": d["mention_id"] + ".abbr_resolved",
+                        "context_left": before_context,
+                        "context_right": after_context,
+                        "context_doc_id": doc_id,
+                        "type": d["type"][0],
+                        "label_id": label_id,
+                        "label": entity_dictionary[label_id]["description"],
+                        "label_title": entity_dictionary[label_id]["title"],
+                    }
+                )
 
             ents_in_split.extend(output)
 

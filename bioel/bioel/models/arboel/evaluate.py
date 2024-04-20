@@ -15,7 +15,7 @@ def main(args):
     )
 
     trainer = L.Trainer(
-        limit_test_batches=0.005,  # for ncbi_disease
+        limit_test_batches=0.01,  # for ncbi_disease
         devices=args["devices"],
         accelerator="gpu",
         strategy="ddp_find_unused_parameters_true",

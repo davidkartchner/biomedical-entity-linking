@@ -219,7 +219,7 @@ def analyzeClusters(clusters, dictionary, queries, knn, n_train_mentions=0):
                     set([dictionary[cluster[i]]["cui"]]) - set(pred_entity_cuis)
                 )
                 continue
-            men_idx -= n_train_mentions  # what's n_train_mentions ?
+            men_idx -= n_train_mentions  # number of training mentions
             if men_idx < 0:
                 # Query is from train set
                 continue

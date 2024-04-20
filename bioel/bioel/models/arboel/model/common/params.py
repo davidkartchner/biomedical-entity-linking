@@ -196,10 +196,10 @@ class BlinkParser(argparse.ArgumentParser):
         )
 
         parser.add_argument(
-            "--model",
+            "--bioel_model",
             default=None,
             type=str,
-            help="Model you are using",
+            help="BioEL model used",
         )
 
         parser.add_argument(
@@ -458,7 +458,13 @@ class BlinkParser(argparse.ArgumentParser):
             "--experiment",
             default=None,
             type=str,
-            help="Name of the experiment for AimLogger",
+            help="Name of the experiment for wandbLogger",
+        )
+
+        parser.add_argument(
+            "--abbrevs",
+            action="store_true",
+            help="Whether to add abbreviations for dataset or not",
         )
 
     def add_eval_args(self, args=None):
@@ -663,6 +669,13 @@ class BlinkParser(argparse.ArgumentParser):
             type=str,
             help="Path to the model for testing",
         )
+
+        parser.add_argument(
+            "--equivalent_cuis",
+            action="store_true",
+            help="Whether the ontology has equivalent cuis or not",
+        )
+
         parser.add_argument(
             "--devices",
             nargs="+",

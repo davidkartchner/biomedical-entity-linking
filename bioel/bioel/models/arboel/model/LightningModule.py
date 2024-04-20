@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import ujson
 import random
 import time
 import pickle
@@ -32,6 +33,12 @@ from bioel.models.arboel.model.common.params import BlinkParser
 from bioel.models.arboel.model.eval_cluster_linking import filter_by_context_doc_id
 from bioel.models.arboel.model.special_partition.special_partition import (
     cluster_linking_partition,
+)
+from bioel.utils.bigbio_utils import (
+    load_bigbio_dataset,
+    dataset_to_df,
+    CUIS_TO_REMAP,
+    CUIS_TO_EXCLUDE,
 )
 
 from IPython import embed
@@ -289,6 +296,22 @@ def evaluate_test(
     # Store the maximum evaluation k
     max_knn = knn_vals[-1]
 
+    # Maps cui to unique identifier
+    dict_cui_to_idx = {}
+    for idx, ent in enumerate(entity_data):
+        dict_cui_to_idx[ent["cui"]] = idx
+    # Maps cui to unique identifier : Used for retrieving cui of top candidates
+    dict_idx_to_cui = {v: k for k, v in dict_cui_to_idx.items()}
+
+    # Needed for the output for evaluation
+    data = load_bigbio_dataset(params["dataset"])
+    exclude = CUIS_TO_EXCLUDE[params["dataset"]]
+    remap = CUIS_TO_REMAP[params["dataset"]]
+    df = dataset_to_df(data, entity_remapping_dict=remap, cuis_to_exclude=exclude)
+
+    # output for evaluation
+    output_eval = []
+
     time_start = time.time()
 
     # Check if graphs are already built
@@ -308,7 +331,6 @@ def evaluate_test(
                 "data": np.array([]),
                 "shape": (n_entities + n_mentions, n_entities + n_mentions),
             }
-
         # Check and load stored embedding data
         embed_data = None
         if os.path.isfile(embed_data_path):
@@ -508,12 +530,47 @@ def evaluate_test(
         for idx in range(len(nn_ent_idxs)):
             # Get nearest entity candidate
             dict_cand_idx = nn_ent_idxs[idx][0]
-            print("dict_cand_idx :", dict_cand_idx)
+
+            # Indices of nearest entity candidates
+            idx_top_candidates = nn_ent_idxs[idx][: params["recall_k"]]
+            # Cuis of nearest entity candidates
+            cuis_top_candidates = [
+                [dict_idx_to_cui.get(index)] for index in idx_top_candidates
+            ]
+            filtered_df = df[
+                (df["text"] == test_processed_data[idx]["mention_name"])
+                & (df["mention_id"] == test_processed_data[idx]["mention_id"])
+            ]
+            if not filtered_df.empty:
+                mention_dict = filtered_df.iloc[0].to_dict()
+            else:
+                print(
+                    "This mention name was not found in the mention dataset :",
+                    test_processed_data[idx]["mention_name"],
+                )
+
+            mention_dict["candidates"] = cuis_top_candidates
+
+            if params["equivalent_cuis"]:
+                synsets = ujson.load(
+                    open(os.path.join(params["data_path"], "cui_synsets.json"))
+                )
+                mention_dict["candidates"] = [
+                    synsets[y[0]] for y in mention_dict["candidates"]
+                ]
+
+            output_eval.append(mention_dict)
+
+            # if idx == 0:
+            #     print("cuis_top_candidates :", cuis_top_candidates)
+            #     print("mention_dict :", mention_dict)
+
             dict_cand_score = nn_ent_dists[idx][0]
             # Compute recall metric
             gold_idxs = test_processed_data[idx]["label_idxs"][
                 : test_processed_data[idx]["n_labels"]
             ]
+
             recall_idx = np.argwhere(nn_ent_idxs[idx] == gold_idxs[0])
             if len(recall_idx) != 0:
                 recall_idx = int(recall_idx)
@@ -658,45 +715,47 @@ def evaluate_test(
     ) / n_graphs_processed
     avg_per_graph_time = (knn_fetch_time + avg_graph_processing_time) / 60
 
-    # # Store results
-    # output_file_name = os.path.join(
-    #     output_path,
-    #     f"eval_results_{__import__('calendar').timegm(__import__('time').gmtime())}",
-    # )
+    # Store results
+    output_file_name = os.path.join(
+        output_path,
+        f"eval_results_{__import__('calendar').timegm(__import__('time').gmtime())}",
+    )
 
-    # try:
-    #     for recall_k in recall_accuracy:
-    #         result_overview[f"recall@{recall_k}"] = recall_accuracy[recall_k]
-    # except:
-    #     logger.info("Recall data not available since graphs were loaded from disk")
+    try:
+        for recall_k in recall_accuracy:
+            result_overview[f"recall@{recall_k}"] = recall_accuracy[recall_k]
+    except:
+        logger.info("Recall data not available since graphs were loaded from disk")
 
-    # for mode in results:
-    #     mode_results = results[mode]
-    #     result_overview[mode] = {}
-    #     for r in mode_results:
-    #         k = r["knn_mentions"]
-    #         result_overview[mode][f"accuracy@knn{k}"] = r["accuracy"]
-    #         logger.info(f"{mode} accuracy@knn{k} = {r['accuracy']}")
-    #         output_file = f"{output_file_name}-{mode}-{k}.json"
-    #         with open(output_file, "w") as f:
-    #             json.dump(r, f, indent=2)
-    #             print(f"\nPredictions ({mode}) @knn{k} saved at: {output_file}")
-    # with open(f"{output_file_name}.json", "w") as f:
-    #     json.dump(result_overview, f, indent=2)
-    #     print(f"\nPredictions overview saved at: {output_file_name}.json")
+    for mode in results:
+        mode_results = results[mode]
+        result_overview[mode] = {}
+        for r in mode_results:
+            k = r["knn_mentions"]
+            result_overview[mode][f"accuracy@knn{k}"] = r["accuracy"]
+            logger.info(f"{mode} accuracy@knn{k} = {r['accuracy']}")
+            output_file = f"{output_file_name}-{mode}-{k}.json"
+            with open(output_file, "w") as f:
+                json.dump(r, f, indent=2)
+                print(f"\nPredictions ({mode}) @knn{k} saved at: {output_file}")
+    with open(f"{output_file_name}.json", "w") as f:
+        json.dump(result_overview, f, indent=2)
+        print(f"\nPredictions overview saved at: {output_file_name}.json")
 
-    # # # Store results
-    # # eval_file_name = os.path.join(
-    # #     output_path,
-    # #     f"output_eval_{__import__('calendar').timegm(__import__('time').gmtime())}",
-    # # )
-    # # # with open(f"{eval_file_name}.json", "r") as f:
+    # Store results
+    eval_file_name = os.path.join(
+        output_path,
+        f"output_eval_{__import__('calendar').timegm(__import__('time').gmtime())}.",
+    )
+    with open(f"{eval_file_name}.json", "w") as f:
+        json.dump(output_eval, f, indent=2)
+        print(f"\nPredictions overview saved at: {eval_file_name}.json")
 
-    # logger.info(
-    #     "\nThe avg. per graph evaluation time is {} minutes\n".format(
-    #         avg_per_graph_time
-    #     )
-    # )
+    logger.info(
+        "\nThe avg. per graph evaluation time is {} minutes\n".format(
+            avg_per_graph_time
+        )
+    )
 
 
 def loss_function(

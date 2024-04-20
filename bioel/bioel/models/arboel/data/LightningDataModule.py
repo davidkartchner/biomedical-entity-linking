@@ -112,10 +112,7 @@ class ArboelDataModule(L.LightningDataModule):
         super().__init__()
         self.save_hyperparameters(params)
 
-        self.dataset = self.hparams["dataset"]
-        self.ontology = self.hparams["ontology"]
         self.data_path = self.hparams["data_path"]
-        self.ontology_dir = self.hparams["ontology_dir"]
 
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.hparams["model_name_or_path"]
@@ -137,9 +134,11 @@ class ArboelDataModule(L.LightningDataModule):
         self.entity_dict_vecs = None
 
     def prepare_data(self):
-        "Use this to download and prepare data."
-        # Create the entity data files: dictionary.pickle
-        # Create the mentions data files:  train.jsonl, valid.jsonl, test.jsonl
+        """
+        Use this to download and prepare data.
+        - Create the entity data files: dictionary.pickle
+        - Create the mentions data files:  train.jsonl, valid.jsonl, test.jsonl
+        """
 
         # path to a file where the training data is stored
         self.train_data = os.path.join(self.data_path, "train.jsonl")
@@ -147,12 +146,12 @@ class ArboelDataModule(L.LightningDataModule):
         # if the full path to file exist, no need to prepare them, they are already ready
         if not os.path.isfile(self.train_data):
             process_mention_dataset(
-                ontology=self.ontology,
-                dataset=self.dataset,
+                ontology=self.hparams["ontology"],
+                dataset=self.hparams["dataset"],
                 data_path=self.data_path,
-                ontology_dir=self.ontology_dir,
-                mention_id=True,
-                context_doc_id=True,
+                ontology_dir=self.hparams["ontology_dir"],
+                resolve_abbrevs=self.hparams["abbrevs"],
+                path_to_abbrev=self.hparams["path_to_abbrev"],
             )
 
     def setup(self, stage=None):
@@ -582,8 +581,9 @@ def main():
     model = "arboel"
 
     dataset = "ncbi_disease"
-    abs_path = "/home2/cye73/data"
+    abs_path = "/home2/cye73/data_test2"
     data_path = os.path.join(abs_path, model, dataset)
+    os.makedirs(data_path, exist_ok=True)
 
     # dataset = "bc5cdr"
     # abs_path = "/home2/cye73/data"
@@ -623,9 +623,9 @@ def main():
         # "dataset": "bc5cdr",
         # "ontology_dir": "/mitchell/entity-linking/2017AA/META/",
         "silent": False,
+        "abbrevs": True,
+        "path_to_abbrev": "/home2/cye73/data_test2/abbreviations.json",
     }
-
-    tokenizer = AutoTokenizer.from_pretrained("dmis-lab/biobert-base-cased-v1.2")
 
     data_module = ArboelDataModule(params=params_test)
 
