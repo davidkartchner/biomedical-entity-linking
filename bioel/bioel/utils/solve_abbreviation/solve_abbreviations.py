@@ -24,7 +24,8 @@ def run_command(command, cwd=None):
         raise
 
 
-def create_abbrev(output_dir):
+def create_abbrev(output_dir, all_articles_path, raw_abbreviations_path):
+
     # Install the packages
     run_command("git clone https://github.com/davidkartchner/Ab3P.git Ab3P")
     run_command("git clone https://github.com/ncbi-nlp/NCBITextLib.git NCBITextLib")
@@ -42,6 +43,8 @@ def create_abbrev(output_dir):
     # Get text of all articles in benchmark
     extract_document_text(output_dir)
 
+    all_articles_path = os.path.join(output_dir, "all_article_text.txt")
+    raw_abbreviations_path = os.path.join(output_dir, "abbreviations.json")
     # Run Ab3P to detect abbreviations
     run_command(
         f"./identify_abbr {all_articles_path} > {raw_abbreviations_path}",
@@ -53,7 +56,5 @@ def create_abbrev(output_dir):
 
 
 if __name__ == "__main__":
-    all_articles_path = "/home2/cye73/data_test2/all_article_text.txt"
-    raw_abbreviations_path = "/home2/cye73/data_test2/raw_abbreviations.txt"
     output_dir = "/home2/cye73/data_test2"
     create_abbrev(output_dir)
