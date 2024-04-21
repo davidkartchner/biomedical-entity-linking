@@ -6,7 +6,7 @@ from tqdm import tqdm
 from collections import defaultdict
 
 
-def extract_document_text(output_dir):
+def extract_document_text(output_dir, all_dataset):
     """
     Collect and consolidate textual data from various medical datasets
     ---------
@@ -25,10 +25,7 @@ def extract_document_text(output_dir):
     total_docs = 0
 
     # Loop through all datasets
-    # for dataset in tqdm(
-    #     ["medmentions_full", "bc5cdr", "gnormplus", "ncbi_disease", "nlmchem", "nlm_gene"]
-    # ):
-    for dataset in tqdm(["ncbi_disease"]):
+    for dataset in tqdm(all_dataset):
         data = load_bigbio_dataset(dataset)
         for split in data.keys():
             for doc in data[split]:
