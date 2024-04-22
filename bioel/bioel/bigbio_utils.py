@@ -30,7 +30,12 @@ def load_bigbio_dataset(dataset_name, abbrev=False, path_to_abbrev=None):
 
     # If abbreviations are required, load the JSON file and update the dataset
     if abbrev:
-        # Load the abbreviations.json file
+        if not os.path.exists(path_to_abbrev):
+            # Output a message instructing the user to create the file
+            raise FileNotFoundError(
+                f"The file {path_to_abbrev} does not exist. \n Create the abbreviations.json file first using create_abbrev function from solve_abbreviations.py"
+            )
+
         with open(path_to_abbrev, "r") as f:
             abbreviations = ujson.load(f)
 
