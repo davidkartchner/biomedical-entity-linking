@@ -12,12 +12,13 @@ def extract_document_text(output_dir, all_dataset):
     ---------
     Parameter
     - output_dir : Path to directory where to save "abbreviations.json" file
+    - all_dataset : Datasets for which you want to find abbreviations
     """
 
     # Make sure the output directory exists, create it if it doesn't
     os.makedirs(output_dir, exist_ok=True)
 
-    output_file = os.path.join(output_dir, "all_article_text.txt")
+    output_file = os.path.join(output_dir, f"all_article_text.txt")
 
     # Make sure we don't duplicate anything
     all_pmids = set([])
@@ -72,7 +73,7 @@ def extract_document_text(output_dir, all_dataset):
         f.write(output)
 
 
-def process_abbreviations(output_dir):
+def process_abbreviations(output_dir, all_dataset):
     """
     Process a list of abbreviations from a text file,
     filtering and collecting them into a JSON format based on a confidence score,
@@ -80,7 +81,7 @@ def process_abbreviations(output_dir):
     ---------
     Parameter
     - output_dir : Path to directory where to save "abbreviations.json" file
-
+    - all_dataset : Datasets for which you want to find abbreviations
     """
     # Set up necessary variables/parameters
     all_abbreviations = {}
