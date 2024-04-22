@@ -24,19 +24,31 @@ def run_command(command, cwd=None):
         raise
 
 
+def clone_or_update_repo(repo_url, directory_name):
+    """Clone a repo if it doesn't exist, or pull updates if it does."""
+    if not os.path.exists(directory_name):
+        run_command(f"git clone {repo_url} {directory_name}")
+        print(f"Cloned {directory_name} from {repo_url}")
+    else:
+        run_command("git pull", cwd=directory_name)
+        print(
+            f"Updated {directory_name} with the latest changes from the remote repository."
+        )
+
+
 def create_abbrev(output_dir, all_dataset):
     """
     Create abbreviations.json that will contains abbreviations for each document in the specified datas
     ---------
     Parameter
     - output_dir : Path to directory where to save "abbreviations.json" file
-    - all_dataset : Dataset for which you want to find abbreviations
+    - all_dataset : Datasets for which you want to find abbreviations
     Ex : all_dataset = ["medmentions_full", "bc5cdr", "gnormplus", "ncbi_disease", "nlmchem", "nlm_gene"]
     """
 
     # Install the packages
-    run_command("git clone https://github.com/davidkartchner/Ab3P.git Ab3P")
-    run_command("git clone https://github.com/ncbi-nlp/NCBITextLib.git NCBITextLib")
+    clone_or_update_repo("https://github.com/davidkartchner/Ab3P.git", "Ab3P")
+    clone_or_update_repo("https://github.com/ncbi-nlp/NCBITextLib.git", "NCBITextLib")
     # # Initialize and update submodules
     # run_command("git submodule init")
     # run_command("git submodule update")
@@ -60,7 +72,7 @@ def create_abbrev(output_dir, all_dataset):
     )
 
     # Extract abbreviation dictionary from processed file
-    process_abbreviations(output_dir)
+    process_abbreviations(output_dir, all_dataset)
 
 
 if __name__ == "__main__":
