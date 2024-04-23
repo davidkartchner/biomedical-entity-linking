@@ -16,28 +16,13 @@ from torch.utils.data import DataLoader
 import bioel.models.arboel.data.data_process as data_process
 from bioel.models.arboel.data.data_utils import process_mention_dataset
 from bioel.models.arboel.model.eval_cluster_linking import filter_by_context_doc_id
+from bioel.models.arboel.crossencoder.original.train_cross import read_dataset
 
 import logging
 
 # Configure the logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-def read_dataset(dataset_name, preprocessed_json_data_parent_folder, debug=False):
-    file_name = "{}.jsonl".format(dataset_name)
-    txt_file_path = os.path.join(preprocessed_json_data_parent_folder, file_name)
-
-    samples = []
-
-    with io.open(txt_file_path, mode="r", encoding="utf-8") as file:
-        for line in file:
-            samples.append(json.loads(line.strip()))
-            if debug and len(samples) > 200:
-                break
-
-    print(f"Read {len(samples)} samples.")
-    return samples
 
 
 def read_data(split, params, logger):
