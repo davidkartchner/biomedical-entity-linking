@@ -40,6 +40,7 @@ from bioel.utils.bigbio_utils import (
     CUIS_TO_REMAP,
     CUIS_TO_EXCLUDE,
 )
+from bioel.models.arboel.model.eval_biencoder import eval_biencoder
 
 from IPython import embed
 from tqdm import tqdm
@@ -309,7 +310,7 @@ def evaluate_test(
     remap = CUIS_TO_REMAP[params["dataset"]]
     df = dataset_to_df(data, entity_remapping_dict=remap, cuis_to_exclude=exclude)
 
-    # output for evaluation
+    # Output for evaluation object
     output_eval = []
 
     time_start = time.time()
@@ -561,10 +562,6 @@ def evaluate_test(
 
             output_eval.append(mention_dict)
 
-            # if idx == 0:
-            #     print("cuis_top_candidates :", cuis_top_candidates)
-            #     print("mention_dict :", mention_dict)
-
             dict_cand_score = nn_ent_dists[idx][0]
             # Compute recall metric
             gold_idxs = test_processed_data[idx]["label_idxs"][
@@ -742,10 +739,10 @@ def evaluate_test(
         json.dump(result_overview, f, indent=2)
         print(f"\nPredictions overview saved at: {output_file_name}.json")
 
-    # Store results
+    # Store results for evaluation object
     eval_file_name = os.path.join(
         output_path,
-        f"output_eval_{__import__('calendar').timegm(__import__('time').gmtime())}.",
+        f"biencoder_output_eval_{__import__('calendar').timegm(__import__('time').gmtime())}.",
     )
     with open(f"{eval_file_name}.json", "w") as f:
         json.dump(output_eval, f, indent=2)
@@ -815,10 +812,6 @@ def loss_function(
         for i, pos_idx in enumerate(forward_output["skipped_positive_idxs"]):
             if pos_idx < n_entities:
                 data_module.entity_dict_vecs = data_module.entity_dict_vecs.to(device)
-                print(
-                    "data_module.entity_dict_vecs device : ",
-                    data_module.entity_dict_vecs.device,
-                )
                 pos_embed = reranker.encode_candidate(
                     cands=data_module.entity_dict_vecs.to(device)[
                         pos_idx : pos_idx + 1
@@ -1304,7 +1297,6 @@ class LitArboel(L.LightningModule):
     def on_train_epoch_start(self):
 
         print("on train epoch start")
-        self.tr_loss = 0
 
         "IV.1) Compute mention and entity embeddings and indexes at the start of each epoch"
         # Compute mention and entity embeddings and indexes at the start of each epoch

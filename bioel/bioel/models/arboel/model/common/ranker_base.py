@@ -42,11 +42,17 @@ class BertEncoder(nn.Module):
         # print(torch.min(token_ids), torch.min(segment_ids), torch.min(attention_mask))
         # print(torch.max(token_ids), torch.max(segment_ids), torch.max(attention_mask))
         # print("token_idx size :", token_ids.size())
-        output_bert, output_pooler = self.bert_model(
+        outputs = self.bert_model(
             input_ids=token_ids,
             token_type_ids=segment_ids,
             attention_mask=attention_mask,
+            return_dict=True,
         )
+        output_bert = outputs.last_hidden_state
+        output_pooler = outputs.pooler_output
+
+        # print("output_pooler:", output_pooler)
+        # print("type(output_pooler):", type(output_pooler))
 
         if self.get_all_outputs:
             result = output_bert

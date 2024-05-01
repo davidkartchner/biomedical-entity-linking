@@ -350,6 +350,141 @@ def process_mention_data(
     return processed_samples, entity_dictionary, tensor_data
 
 
+def process_mention_with_candidate(
+    samples,
+    entity_dictionary,
+    tokenizer,
+    max_context_length,
+    max_cand_length,
+    silent,
+    dictionary_processed=False,
+    mention_key="mention",
+    context_key="context",
+    label_key="label",
+    multi_label_key=None,
+    title_key="label_title",
+    label_id_key="label_id",
+    ent_start_token=ENT_START_TAG,
+    ent_end_token=ENT_END_TAG,
+    title_token=ENT_TITLE_TAG,
+    debug=False,
+    logger=None,
+    drop_entities=[],
+):
+    # Entity Dictionary Processing :
+    # Tokenize entities from the entity dictionary if not already processed
+    processed_samples = []
+    dict_cui_to_idx = {}
+    for idx, ent in enumerate(tqdm(entity_dictionary, desc="Tokenizing dictionary")):
+        dict_cui_to_idx[ent["cui"]] = idx
+        if not dictionary_processed:
+            label_representation = get_candidate_representation(
+                ent["description"], tokenizer, max_cand_length, ent["title"]
+            )
+            entity_dictionary[idx]["tokens"] = label_representation["tokens"]
+            entity_dictionary[idx]["ids"] = label_representation["ids"]
+
+    if debug:
+        samples = samples[:200]
+
+    if silent:
+        iter_ = samples
+    else:
+        iter_ = tqdm(samples)
+
+    use_world = True
+
+    id_to_idx = {}
+    label_id_is_int = True
+
+    drop_entities_set = set(drop_entities)
+
+    for idx, sample in enumerate(iter_):
+        if sample["label_id"] in drop_entities_set:
+            continue
+
+        context_tokens = get_context_representation(
+            sample,
+            tokenizer,
+            max_context_length,
+            mention_key,
+            context_key,
+            ent_start_token,
+            ent_end_token,
+        )
+
+        label = sample[label_key]
+        title = sample.get(title_key, None)
+
+        label_tokens = get_candidate_representation(
+            label,
+            tokenizer,
+            max_cand_length,
+            title,
+        )
+
+        labels, record_labels, record_cuis = [sample], [], []
+        # If the multi_label_key is provided (meaning samples can have multiple labels),
+        # labels is set to the list of labels from the sample corresponding to this key.
+        if multi_label_key is not None:
+            labels = sample[multi_label_key]
+
+        not_found_in_dict = False
+        for l in labels:
+            label = l[label_key]
+            label_idx = l[label_id_key]
+            if label_idx not in dict_cui_to_idx:
+                not_found_in_dict = True
+                break
+            record_labels.append(dict_cui_to_idx[label_idx])
+            record_cuis.append(label_idx)
+
+        if not_found_in_dict:
+            continue
+
+        record = {
+            "context": context_tokens,
+            "label": label_tokens,
+            "label_idx": [record_labels],
+        }
+
+        processed_samples.append(record)
+
+    if logger:
+        logger.info("====Processed samples: ====")
+        for sample in processed_samples[:5]:
+            logger.info("Context tokens : " + " ".join(sample["context"]["tokens"]))
+            logger.info(
+                "Context ids : " + " ".join([str(v) for v in sample["context"]["ids"]])
+            )
+            logger.info("Label tokens : " + " ".join(sample["label"]["tokens"]))
+            logger.info(
+                "Label ids : " + " ".join([str(v) for v in sample["label"]["ids"]])
+            )
+            logger.info(f"Label_id : {sample['label_idx'][0]}")
+
+    context_vecs = torch.tensor(
+        select_field(processed_samples, "context", "ids"),
+        dtype=torch.long,
+    )
+    cand_vecs = torch.tensor(
+        select_field(processed_samples, "label", "ids"),
+        dtype=torch.long,
+    )
+    label_idx = torch.tensor(
+        select_field(processed_samples, "label_idx"),
+        dtype=torch.long,
+    )
+    data = {
+        "context_vecs": context_vecs,  # Mention + context : Indices in the tokenizer vocabulary of "[CLS] c_left [START] mention [END] c_right [SEP]" for each sample in the test set
+        "cand_vecs": cand_vecs,  # Ground truth entities : Indices in the tokenizer vocabulary of "[CLS] e_title [TITLE] e_desc [SEP]" for each sample in the test set
+        "label_idx": label_idx,  # Indice of the correct entity
+    }
+
+    tensor_data = TensorDataset(context_vecs, cand_vecs, label_idx)
+    return data, tensor_data
+
+
 def compute_gold_clusters(mention_data):
     """
     Description

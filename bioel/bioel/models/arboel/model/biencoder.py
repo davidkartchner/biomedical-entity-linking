@@ -37,7 +37,9 @@ class BiEncoderModule(torch.nn.Module):
         ctxt_bert = AutoModel.from_pretrained(
             params["model_name_or_path"], return_dict=False
         )  # Could be a path containing config.json and pytorch_model.bin; or could be an id shorthand for a model that is loaded in the library
-        cand_bert = AutoModel.from_pretrained(params["model_name_or_path"], return_dict=False)
+        cand_bert = AutoModel.from_pretrained(
+            params["model_name_or_path"], return_dict=False
+        )
         self.context_encoder = BertEncoder(
             ctxt_bert,
             params["out_dim"],
@@ -127,13 +129,19 @@ class BiEncoderRanker(torch.nn.Module):
         - fname : str
         The file name (or path) where the model's state dictionary is saved.
         """
-        if cpu:
-            state_dict = torch.load(fname, map_location=lambda storage, location: "cpu")
-        else:
-            state_dict = torch.load(fname)
-        self.model.load_state_dict(
-            state_dict
-        )  # Once the state dictionary is loaded into state_dict, the method updates self.model weights
+        # Load the entire checkpoint
+        checkpoint = torch.load(fname, map_location="cpu" if cpu else None)
+
+        # Access the model state_dict, stored under 'state_dict' key in PyTorch Lightning checkpoints
+        state_dict = checkpoint["state_dict"]
+
+        # Remove the 'model.' prefix that PyTorch Lightning adds
+        new_state_dict = {
+            key.replace("model.", ""): value for key, value in state_dict.items()
+        }
+
+        # Load the weights
+        self.model.load_state_dict(new_state_dict)
 
     def build_model(self):
         """
@@ -141,22 +149,12 @@ class BiEncoderRanker(torch.nn.Module):
         """
         self.model = BiEncoderModule(self.params)
 
-    def save_model(self, output_dir):
-        """
-        Saves the current model weights and configuration to the specified directory.
-        ------
-        Params :
-        - output_dir : str
-        The path to the directory where the model's weights and configuration will be saved.
-        If this directory does not exist, it will be created.
-        """
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        model_to_save = get_model_obj(self.model)
-        output_model_file = os.path.join(output_dir, WEIGHTS_NAME)
-        output_config_file = os.path.join(output_dir, CONFIG_NAME)
-        torch.save(model_to_save.state_dict(), output_model_file)
-        model_to_save.config.to_json_file(output_config_file)
+    def load_model(self, fname, cpu=False):
+        if cpu:
+            state_dict = torch.load(fname, map_location=lambda storage,location: "cpu")
+        else:
+            state_dict = torch.load(fname)
+        self.model.load_state_dict(state_dict)
 
     def get_optimizer(self, optim_states=None, saved_optim_type=None):
         """

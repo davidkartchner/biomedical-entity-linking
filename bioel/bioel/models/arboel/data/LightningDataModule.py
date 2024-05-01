@@ -1,7 +1,6 @@
 import sys
 
 import os
-import io
 import json
 import pickle
 import logger
@@ -43,7 +42,7 @@ def read_data(split, params, logger):
     logger :
         An object used for logging messages about the process, such as the number of samples read.
     """
-    samples = read_dataset(split, params["data_path"])  # DD21
+    samples = read_dataset(split, params["data_path"])
     # Check if dataset has multiple ground-truth labels
     has_mult_labels = "labels" in samples[0].keys()
     if params["filter_unlabeled"]:
@@ -153,24 +152,24 @@ class ArboelDataModule(L.LightningDataModule):
         if os.path.isfile(self.entity_dictionary_pkl_path):
             print("Loading stored processed entity dictionary...")
             with open(self.entity_dictionary_pkl_path, "rb") as read_handle:
-                self.entity_dictionary = pickle.load(read_handle)  # DD12B
+                self.entity_dictionary = pickle.load(read_handle)
             self.entity_dictionary_loaded = True
 
         else:  # else load the one not processed yet
             with open(
                 os.path.join(self.data_path, "dictionary.pickle"), "rb"
-            ) as read_handle:  # A11
+            ) as read_handle:
                 self.entity_dictionary = pickle.load(read_handle)
 
         "Entity dict : drop entity for discovery"
         # For discovery experiment: Drop entities used in training that were dropped randomly from dev/test set
-        if self.hparams["drop_entities"]:  # A12
+        if self.hparams["drop_entities"]:
             assert self.entity_dictionary
             drop_set_path = (
                 self.hparams["drop_set"]
                 if self.hparams["drop_set"] is not None
                 else os.path.join(self.data_path, "drop_set_mention_data.pickle")
-            )  # A12
+            )
             if not os.path.isfile(drop_set_path):
                 raise ValueError(
                     "Invalid or no --drop_set path provided to dev/test mention data"

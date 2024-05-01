@@ -467,6 +467,13 @@ class BlinkParser(argparse.ArgumentParser):
             help="Whether to add abbreviations for dataset or not",
         )
 
+        parser.add_argument(
+            "--compute_macro_avg",
+            type=bool,
+            default=True,
+            help="Whether to compute the macro average, if missing, during BLINK-style cross-encoder eval (val or test).",
+        )
+
     def add_eval_args(self, args=None):
         """
         Add model evaluation args.
@@ -636,6 +643,12 @@ class BlinkParser(argparse.ArgumentParser):
             help="Batch size to use for cross-encoder scoring",
         )
         parser.add_argument(
+            "--eval_batch_size",
+            default=8,
+            type=int,
+            help="Total batch size for evaluation.",
+        )
+        parser.add_argument(
             "--biencoder_indices_path",
             default=None,
             type=str,
@@ -663,6 +676,7 @@ class BlinkParser(argparse.ArgumentParser):
             type=str,
             help="Mention data set used to drop random entites from in order to train model for Entity Discovery",
         )
+
         parser.add_argument(
             "--model_checkpoint",
             default=None,
@@ -682,6 +696,39 @@ class BlinkParser(argparse.ArgumentParser):
             type=int,
             default=None,
             help="IDs of the devices (gpu) used",
+        )
+
+        parser.add_argument(
+            "--evaluate",
+            action="store_true",
+            help="evaluate",
+        )
+
+        parser.add_argument(
+            "--cross_encoder",
+            action="store_true",
+            help="Create .t7 file for cross_encoder reranking",
+        )
+
+        parser.add_argument(
+            "--top_candidates_path",
+            default=None,
+            type=str,
+            help="Path to the file with top candidates",
+        )
+
+        parser.add_argument(
+            "--inject_eval_ground_truth",
+            type=bool,
+            default=False,
+            help="Whether to inject the ground truth candidate, if missing, during BLINK-style cross-encoder eval (val or test).",
+        )
+
+        parser.add_argument(
+            "--compute_macro_avg",
+            type=bool,
+            default=True,
+            help="Whether to compute the macro average, if missing, during BLINK-style cross-encoder eval (val or test).",
         )
 
     def add_joint_train_args(self, args=None):

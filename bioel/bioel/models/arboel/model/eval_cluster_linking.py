@@ -199,7 +199,7 @@ def analyzeClusters(clusters, dictionary, queries, knn, n_train_mentions=0):
         if pred_entity_idx >= n_entities:
             # If the first element is a mention, then the cluster does not have an entity
             _debug_clusters_wo_entities += 1
-            continue  # Skip to the next cluster (for cluster in clusters.values)
+            continue  # Skip to the next cluster
         pred_entity = dictionary[pred_entity_idx]
         pred_entity_cuis = [
             str(pred_entity["cui"])
@@ -257,9 +257,9 @@ def analyzeClusters(clusters, dictionary, queries, knn, n_train_mentions=0):
     print(f"Accuracy = {results['accuracy']}")
 
     # Run sanity checks
-    assert n_mentions == _debug_n_mens_evaluated
     assert _debug_clusters_wo_entities == 0
     assert _debug_clusters_w_mult_entities == 0
+    assert n_mentions == _debug_n_mens_evaluated
 
     return results
 

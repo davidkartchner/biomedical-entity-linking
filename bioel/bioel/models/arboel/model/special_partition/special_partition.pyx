@@ -220,7 +220,7 @@ def _EXP_special_partition(np.ndarray[INT_t, ndim=1] row,
     if silent:
         _iter = ordered_indices
     else:
-        _iter = tqdm(ordered_indices, desc='Paritioning joint graph')
+        _iter = tqdm(ordered_indices, desc='Partitioning joint graph')
     
     for i in _iter:
         # Undirected: Skip iteration if the edge has already been dropped
@@ -310,7 +310,7 @@ def special_partition(np.ndarray[INT_t, ndim=1] row,
     if silent:
         _iter = ordered_indices
     else:
-        _iter = tqdm(ordered_indices, desc='Paritioning joint graph')
+        _iter = tqdm(ordered_indices, desc='Partitioning joint graph')
     
     for i in _iter:
         # Undirected: Skip iteration if the edge has already been dropped
