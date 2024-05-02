@@ -1,23 +1,25 @@
-from bioel.models.arboel.model.common.params import BlinkParser
+from bioel.models.arboel.biencoder.model.common.params import BlinkParser
 
 import lightning as L
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-from bioel.models.arboel.crossencoder.my_train_cross import (
+from bioel.models.arboel.crossencoder.data.CrossEncoderLightningDataModule import (
     CrossEncoderDataModule,
-    CrossEncoder,
+)
+from bioel.models.arboel.crossencoder.model.CrossEncoderLightningModule import (
+    LitCrossEncoder,
 )
 
 
 def main(args):
     data_module = CrossEncoderDataModule(params=args)
 
-    MyModel = CrossEncoder.load_from_checkpoint(
-        params=args, checkpoint_path=args["model_checkpoint"]
+    MyModel = LitCrossEncoder.load_from_checkpoint(
+        params=args, checkpoint_path=args["crossencoder_checkpoint"]
     )
 
     trainer = L.Trainer(
-        # limit_test_batches=4,
+        # limit_test_batches=1,
         devices=args["devices"],
         accelerator="gpu",
         strategy="ddp_find_unused_parameters_true",

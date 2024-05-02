@@ -17,9 +17,12 @@ from pytorch_transformers.modeling_utils import CONFIG_NAME, WEIGHTS_NAME
 
 
 from transformers import AutoTokenizer, AutoModel
-from bioel.models.arboel.model.common.ranker_base import BertEncoder, get_model_obj
-from bioel.models.arboel.model.common.optimizer import get_bert_optimizer
-from bioel.models.arboel.model.common.params import (
+from bioel.models.arboel.biencoder.model.common.ranker_base import (
+    BertEncoder,
+    get_model_obj,
+)
+from bioel.models.arboel.biencoder.model.common.optimizer import get_bert_optimizer
+from bioel.models.arboel.biencoder.model.common.params import (
     ENT_START_TAG,
     ENT_END_TAG,
     ENT_TITLE_TAG,

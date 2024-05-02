@@ -1,21 +1,26 @@
-from bioel.models.arboel.model.LightningModule import ArboelDataModule, LitArboel
+from bioel.models.arboel.crossencoder.data.CrossEncoderLightningDataModule import (
+    CrossEncoderDataModule,
+)
+from bioel.models.arboel.crossencoder.model.CrossEncoderLightningModule import (
+    LitCrossEncoder,
+)
 from datetime import datetime
 from lightning.pytorch.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 import lightning as L
-from bioel.models.arboel.model.common.params import BlinkParser
+from bioel.models.arboel.biencoder.model.common.params import BlinkParser
 
 
 def main(args):
     print("Current seed:", args["seed"])
 
-    data_module = ArboelDataModule(params=args)
+    data_module = CrossEncoderDataModule(params=args)
 
-    model = LitArboel(params=args)
+    model = LitCrossEncoder(params=args)
 
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     model_checkpoint = ModelCheckpoint(
-        monitor="max_acc",  # Metric to monitor
+        monitor="Accuracy",  # Metric to monitor
         dirpath=args["output_path"],  # Directory to save the model
         filename=f"{current_time}-{{epoch}}-{{max_acc:.2f}}",  # Saves the model with epoch and val_loss in the filename
         save_top_k=1,  # Number of best models to save; -1 means save all of them
@@ -26,7 +31,9 @@ def main(args):
     wandb_logger = WandbLogger(project=args["experiment"])
 
     trainer = L.Trainer(
-        limit_val_batches=0.3,
+        limit_val_batches=30,
+        # num_sanity_val_steps=0,
+        # fast_dev_run=True,
         max_epochs=args["num_train_epochs"],
         devices=args["devices"],
         accelerator="gpu",
@@ -35,6 +42,7 @@ def main(args):
         callbacks=[model_checkpoint],
         accumulate_grad_batches=args["gradient_accumulation_steps"],
         precision="16-mixed",
+        check_val_every_n_epoch=1,
         logger=wandb_logger,
     )
 
