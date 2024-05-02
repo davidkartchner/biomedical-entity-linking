@@ -10,7 +10,7 @@ from bioel.utils.dataset_consts import *
 from datasets import load_dataset
 
 
-def load_bigbio_dataset(dataset_name, abbrev=False, path_to_abbrev=None):
+def load_bigbio_dataset(dataset_name, path_to_abbrev=None):
     """
     Load BigBio dataset and include abbreviations if specified.
     """
@@ -29,7 +29,7 @@ def load_bigbio_dataset(dataset_name, abbrev=False, path_to_abbrev=None):
         )
 
     # If abbreviations are required, load the JSON file and update the dataset
-    if abbrev:
+    if path_to_abbrev is not None:
         if not os.path.exists(path_to_abbrev):
             # Output a message instructing the user to create the file
             raise FileNotFoundError(
@@ -323,13 +323,11 @@ def resolve_abbreviation(document_id, text, abbreviations_dict):
         return text
 
 
-def load_dataset_df(name, abbrev=False, path_to_abbrev=None):
+def load_dataset_df(name, path_to_abbrev=None):
     """
     Load bigbio dataset and turn into pandas dataframe
     """
-    data = load_bigbio_dataset(
-        dataset_name=name, abbrev=abbrev, path_to_abbrev=path_to_abbrev
-    )
+    data = load_bigbio_dataset(dataset_name=name, path_to_abbrev=path_to_abbrev)
 
     if name in CUIS_TO_EXCLUDE:
         exclude = CUIS_TO_EXCLUDE[name]

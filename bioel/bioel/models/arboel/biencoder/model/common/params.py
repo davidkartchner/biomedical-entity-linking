@@ -213,14 +213,14 @@ class BlinkParser(argparse.ArgumentParser):
             "--ontology",
             default=None,
             type=str,
-            help="Ontology you are using",
+            help="The ontology you are using",
         )
 
         parser.add_argument(
             "--ontology_dir",
             default=None,
             type=str,
-            help="Path to ontology",
+            help="Path to the ontology",
         )
 
     def add_training_args(self, args=None):

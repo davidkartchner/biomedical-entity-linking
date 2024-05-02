@@ -22,7 +22,7 @@ from bioel.utils.bigbio_utils import load_bigbio_dataset, resolve_abbreviation
 from bioel.ontology import BiomedicalOntology
 
 
-def process_medic_ontology(ontology, data_path, ontology_dir):
+def process_ontology(ontology: BiomedicalOntology, data_path: str):
     """
     This function prepares the entity data : dictionary.pickle
 
@@ -32,16 +32,11 @@ def process_medic_ontology(ontology, data_path, ontology_dir):
         Ontology associated with the dataset
     - data_path : str
         Path where to load and save dictionary.pickle
-    - ontology_dir : str
-        Path to medic ontology
     """
-
-    # Use the class method to load the MEDIC ontology and get a new instance of BiomedicalOntology
-    ontology = BiomedicalOntology.load_medic(filepath=ontology_dir, name="medic")
 
     # Check if equivalent CUIs are present for the first entity
     first_entity_cui = next(iter(ontology.entities))
-    equivalent_cuis = bool(ontology.entities[first_entity_cui].equivalant_cuis)
+    equivalant_cuis = bool(ontology.entities[first_entity_cui].equivalant_cuis)
 
     "If dictionary already processed, load it else process and load it"
     entity_dictionary_pkl_path = os.path.join(data_path, "dictionary.pickle")
@@ -51,183 +46,24 @@ def process_medic_ontology(ontology, data_path, ontology_dir):
         with open(entity_dictionary_pkl_path, "rb") as read_handle:
             entities = pickle.load(read_handle)
 
-        return entities, equivalent_cuis
+        return entities, equivalant_cuis
 
     ontology_entities = []
     for cui, entity in tqdm(ontology.entities.items()):
+        if ontology.name == "ncbi_disease":
+            entity.types[0] = "Disease"
+
         if entity.aliases != "":
             if entity.definition != "":
                 new_entity = {
-                    "type": "Disease",
-                    "cui": entity.cui,
-                    "title": entity.name,
-                    "cuis": entity.equivalant_cuis,
-                    "description": f"{entity.name} ( Disease : {entity.aliases} ) [{entity.definition}]",
-                }
-            else:
-                new_entity = {
-                    "type": "Disease",
-                    "cui": entity.cui,
-                    "title": entity.name,
-                    "cuis": entity.equivalant_cuis,
-                    "description": f"{entity.name} ( Disease : {entity.aliases} )",
-                }
-
-        else:
-            if entity.definition != "":
-                new_entity = {
-                    "type": "Disease",
-                    "cui": entity.cui,
-                    "title": entity.name,
-                    "cuis": entity.equivalant_cuis,
-                    "description": f"{entity.name} ( Disease) [{entity.definition}]",
-                }
-            else:
-                new_entity = {
-                    "type": "Disease",
-                    "cui": entity.cui,
-                    "title": entity.name,
-                    "cuis": entity.equivalant_cuis,
-                    "description": f"{entity.name} ( Disease)",
-                }
-        ontology_entities.append(new_entity)
-
-    # Check if the directory exists, and create it if it does not
-    if not os.path.exists(data_path):
-        os.makedirs(data_path)
-
-    # Save entities to pickle file
-    with open(os.path.join(data_path, "dictionary.pickle"), "wb") as f:
-        pickle.dump(ontology_entities, f)
-
-    entities = pickle.load(open(os.path.join(data_path, "dictionary.pickle"), "rb"))
-    return entities, equivalent_cuis
-
-
-# Function for retrieving the title + description of entities in obo_ontology
-def process_obo_ontology(ontology, data_path, obo_dict):
-    """
-    This function prepares the entity data : dictionary.pickle
-
-    Parameters
-    ----------
-    - ontology : str (only umls for now)
-        Ontology associated with the dataset
-    - data_path : str
-        Path where to load and save dictionary.pickle
-    - obo_dict : dict
-        dictionary with the parameter expected by load_obo method :
-        filepath, name, prefix_to_keep, entity_type, abbrev
-    """
-
-    ontology = BiomedicalOntology.load_obo(**obo_dict)
-
-    equivalent_cuis = False
-    if ontology.entities[0].equivalant_cuis is not None:
-        equivalent_cuis = True
-
-    "If dictionary already processed, load it else process and load it"
-    entity_dictionary_pkl_path = os.path.join(data_path, "dictionary.pickle")
-
-    if os.path.isfile(entity_dictionary_pkl_path):
-        print("Loading stored processed entity dictionary...")
-        with open(entity_dictionary_pkl_path, "rb") as read_handle:
-            entities = pickle.load(read_handle)
-
-        return entities, equivalent_cuis
-
-    ontology_entities = []
-    for entity in tqdm(ontology.entities):
-        if entity.aliases != "":
-            if entity.definition != "":
-                new_entity = {
-                    "type": entity.types,
-                    "cui": entity.cui,
-                    "title": entity.name,
-                    "description": f"{entity.name} ( {entity.types} : {entity.aliases} ) [{entity.definition}]",
-                }
-            else:
-                new_entity = {
-                    "type": entity.types,
-                    "cui": entity.cui,
-                    "title": entity.name,
-                    "description": f"{entity.name} ( {entity.types} : {entity.aliases} )",
-                }
-
-        else:
-            if entity.definition != "":
-                new_entity = {
-                    "type": entity.types,
-                    "cui": entity.cui,
-                    "title": entity.name,
-                    "description": f"{entity.name} ( {entity.types} ) [{entity.definition}]",
-                }
-            else:
-                new_entity = {
-                    "type": entity.types,
-                    "cui": entity.cui,
-                    "title": entity.name,
-                    "description": f"{entity.name} ( {entity.types} )",
-                }
-        ontology_entities.append(new_entity)
-
-    # Check if the directory exists, and create it if it does not
-    if not os.path.exists(data_path):
-        os.makedirs(data_path)
-
-    # Save entities to pickle file
-    with open(os.path.join(data_path, "dictionary.pickle"), "wb") as f:
-        pickle.dump(ontology_entities, f)
-
-    entities = pickle.load(open(os.path.join(data_path, "dictionary.pickle"), "rb"))
-    return entities, equivalent_cuis
-
-
-# Function for retrieving the title + description of entities of umls_ontology
-def process_umls_ontology(ontology, data_path, ontology_dir):
-    """
-    This function prepares the entity data : dictionary.pickle
-
-    Parameters
-    ----------
-    - ontology : str (only umls for now)
-        Ontology associated with the dataset
-    - data_path : str
-        Path where to load and save dictionary.pickle
-    - ontology_dir : str
-        Path to UMLS ontology
-    """
-
-    # Use the class method to load the MEDIC ontology and get a new instance of BiomedicalOntology
-    ontology = BiomedicalOntology.load_umls(filepath=ontology_dir, name="umls")
-
-    # Check if equivalent CUIs are present for the first entity
-    first_entity_cui = next(iter(ontology.entities))
-    equivalent_cuis = bool(ontology.entities[first_entity_cui].equivalant_cuis)
-
-    "If dictionary already processed, load it else process and load it"
-    entity_dictionary_pkl_path = os.path.join(data_path, "dictionary.pickle")
-
-    if os.path.isfile(entity_dictionary_pkl_path):
-        print("Loading stored processed entity dictionary...")
-        with open(entity_dictionary_pkl_path, "rb") as read_handle:
-            entities = pickle.load(read_handle)
-
-        return entities, equivalent_cuis
-
-    ontology_entities = []
-    for cui, entity in tqdm(ontology.entities.items()):
-        if entity.aliases != "":
-            if entity.definition != "":
-                new_entity = {
-                    "type": entity.types[0],
+                    "type": {entity.types[0]},
                     "cui": entity.cui,
                     "title": entity.name,
                     "description": f"{entity.name} ( {entity.types[0]} : {entity.aliases} ) [{entity.definition}]",
                 }
             else:
                 new_entity = {
-                    "type": entity.types[0],
+                    "type": {entity.types[0]},
                     "cui": entity.cui,
                     "title": entity.name,
                     "description": f"{entity.name} ( {entity.types[0]} : {entity.aliases} )",
@@ -236,17 +72,17 @@ def process_umls_ontology(ontology, data_path, ontology_dir):
         else:
             if entity.definition != "":
                 new_entity = {
-                    "type": entity.types[0],
+                    "type": {entity.types[0]},
                     "cui": entity.cui,
                     "title": entity.name,
-                    "description": f"{entity.name} ( {entity.types[0]} ) [{entity.definition}]",
+                    "description": f"{entity.name} ( {entity.types[0]}) [{entity.definition}]",
                 }
             else:
                 new_entity = {
-                    "type": entity.types[0],
+                    "type": {entity.types[0]},
                     "cui": entity.cui,
                     "title": entity.name,
-                    "description": f"{entity.name} ( {entity.types[0]} )",
+                    "description": f"{entity.name} ( {entity.types[0]})",
                 }
         ontology_entities.append(new_entity)
 
@@ -259,95 +95,16 @@ def process_umls_ontology(ontology, data_path, ontology_dir):
         pickle.dump(ontology_entities, f)
 
     entities = pickle.load(open(os.path.join(data_path, "dictionary.pickle"), "rb"))
-    return entities, equivalent_cuis
-
-
-def process_mesh_ontology(ontology, data_path, ontology_dir):
-    """
-    This function prepares the entity data : dictionary.pickle
-
-    Parameters
-    ----------
-    - ontology : str (only umls for now)
-        Ontology associated with the dataset
-    - data_path : str
-        Path where to load and save dictionary.pickle
-    - ontology_dir : str
-        Path to medic ontology
-    """
-
-    ontology = BiomedicalOntology.load_mesh(filepath=ontology_dir, name="mesh")
-
-    # Check if equivalent CUIs are present for the first entity
-    first_entity_cui = next(iter(ontology.entities))
-    equivalent_cuis = bool(ontology.entities[first_entity_cui].equivalant_cuis)
-
-    "If dictionary already processed, load it else process and load it"
-    entity_dictionary_pkl_path = os.path.join(data_path, "dictionary.pickle")
-
-    if os.path.isfile(entity_dictionary_pkl_path):
-        print("Loading stored processed entity dictionary...")
-        with open(entity_dictionary_pkl_path, "rb") as read_handle:
-            entities = pickle.load(read_handle)
-
-        return entities, equivalent_cuis
-
-    ontology_entities = []
-    for cui, entity in tqdm(ontology.entities.items()):
-        if entity.aliases != "":
-            if entity.definition != "":
-                new_entity = {
-                    "type": "Disease",
-                    "cui": entity.cui,
-                    "title": entity.name,
-                    "description": f"{entity.name} ( Disease : {entity.aliases} ) [{entity.definition}]",
-                }
-            else:
-                new_entity = {
-                    "type": "Disease",
-                    "cui": entity.cui,
-                    "title": entity.name,
-                    "description": f"{entity.name} ( Disease : {entity.aliases} )",
-                }
-
-        else:
-            if entity.definition != "":
-                new_entity = {
-                    "type": "Disease",
-                    "cui": entity.cui,
-                    "title": entity.name,
-                    "description": f"{entity.name} ( Disease) [{entity.definition}]",
-                }
-            else:
-                new_entity = {
-                    "type": "Disease",
-                    "cui": entity.cui,
-                    "title": entity.name,
-                    "description": f"{entity.name} ( Disease)",
-                }
-        ontology_entities.append(new_entity)
-
-    # Check if the directory exists, and create it if it does not
-    if not os.path.exists(data_path):
-        os.makedirs(data_path)
-
-    # Save entities to pickle file
-    with open(os.path.join(data_path, "dictionary.pickle"), "wb") as f:
-        pickle.dump(ontology_entities, f)
-
-    entities = pickle.load(open(os.path.join(data_path, "dictionary.pickle"), "rb"))
-    return entities, equivalent_cuis
+    return entities, equivalant_cuis
 
 
 # Function for preparing the mentions in the dataset into the right format for each model
 def process_mention_dataset(
-    ontology,
-    dataset,
-    data_path,
+    ontology: BiomedicalOntology,
+    dataset: str,
+    data_path: str,
     resolve_abbrevs=False,
     path_to_abbrev=None,
-    obo_dict: Optional[dict] = None,
-    ontology_dir: Optional[str] = None,
 ):
     """
     This function prepares the mentions data :  Creates the train.jsonl, valid.jsonl, test.jsonl
@@ -364,37 +121,18 @@ def process_mention_dataset(
 
     Parameters
     ----------
-    - ontology : str
+    - ontology : BiomedicalOntology object
     Ontology associated with the dataset
     - dataset : str
     Name of the dataset
     - data_path : str
     Path where to load and save dictionary.pickle
-    - ontology_dir : str
-    Path to the ontology (umls, medic etc...)
     """
-    data = load_bigbio_dataset(
-        dataset_name=dataset, abbrev=resolve_abbrevs, path_to_abbrev=path_to_abbrev
-    )
+    data = load_bigbio_dataset(dataset_name=dataset, path_to_abbrev=path_to_abbrev)
     exclude = CUIS_TO_EXCLUDE[dataset]
     remap = CUIS_TO_REMAP[dataset]
 
-    if ontology == "obo":
-        entities, equivalant_cuis = process_obo_ontology(ontology, data_path, obo_dict)
-    elif ontology == "medic":
-        entities, equivalant_cuis = process_medic_ontology(
-            ontology, data_path, ontology_dir
-        )
-    elif ontology == "umls":
-        entities, equivalant_cuis = process_umls_ontology(
-            ontology, data_path, ontology_dir
-        )
-    elif ontology == "mesh":
-        entities, equivalant_cuis = process_mesh_ontology(
-            ontology, data_path, ontology_dir
-        )
-    else:
-        print("ERROR!")
+    entities, equivalant_cuis = process_ontology(ontology, data_path)
 
     entity_dictionary = {d["cui"]: d for d in tqdm(entities)}  # CC1
 
