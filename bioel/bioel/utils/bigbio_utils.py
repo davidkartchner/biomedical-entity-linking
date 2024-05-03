@@ -306,16 +306,14 @@ def resolve_abbreviation(document_id, text, abbreviations_dict):
     """
     Return un-abbreviated form of entity name if it was found in abbreviations_dict, else return original text
 
-    Inputs:
-    -------------------------------
-        document_id: str
-            ID of document where mention was found
-
-        text: str
-            Text of mention
-
-        abbreviations_dict: dict
-            Dict of form {document_id:{text: unabbreviated_text}} containing abbreviations detected in each document
+    Params
+    ------
+    - document_id: str
+        ID of document where mention was found
+    - text: str
+        Text of mention
+    - abbreviations_dict: dict
+        Dict of form {document_id:{text: unabbreviated_text}} containing abbreviations detected in each document
     """
     if text in abbreviations_dict[document_id]:
         return abbreviations_dict[document_id][text]

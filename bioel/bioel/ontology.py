@@ -41,18 +41,23 @@ class BiomedicalOntology:
     def get_canonical_name(self):
         """
         Get name of entities in the ontology
-        data: list of dict
         """
-        canonical_names = {entity.cui: entity.name for entity in self.entities}
+        canonical_names = {cui: entity.name for cui, entity in self.entities.items()}
+        return canonical_names
+
+    def get_canonical_name(self):
+        """
+        Get name of entities in the ontology
+        """
+        canonical_names = {cui: entity.name for cui, entity in self.entities.items()}
         return canonical_names
 
     def get_aliases(self):
         """
         Get aliases of entities in the ontology
-        data: list of dict
         """
-        aliases = {entity.cui: entity.aliases for entity in self.entities}
-        return aliases
+        aliases_dict = {cui: entity.aliases for cui, entity in self.entities.items()}
+        return aliases_dict
 
     def get_definition(self):
         """
@@ -61,19 +66,17 @@ class BiomedicalOntology:
         """
         definitions_dict = {
             entity.cui: entity.definition
-            for entity in self.entities
+            for entity in self.entities.values()
             if entity.definition is not None
         }
         return definitions_dict
 
     def get_types(self):
         """
-        Get type of entities in the ontology
-        data: list of dict
+        Get types of entities in the ontology
         """
-        # Extract tuples of CUI and types from the Data
-        types = {entity.cui: entity.types for entity in self.entities}
-        return types
+        types_dict = {cui: entity.types for cui, entity in self.entities.items()}
+        return types_dict
 
     @classmethod
     def load_obo(

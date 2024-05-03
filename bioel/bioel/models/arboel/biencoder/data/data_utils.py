@@ -22,6 +22,40 @@ from bioel.utils.bigbio_utils import load_bigbio_dataset, resolve_abbreviation
 from bioel.ontology import BiomedicalOntology
 
 
+def get_type_gcd(types, type2geneology, cached_types: dict = None):
+    """
+    Find the most granular single parent type for an entity with multiple types
+    If an entity is assigned multiple types with disjoint type hierarchies
+    """
+    if len(types) == 1:
+        t = types[0]
+        if t not in cached_types:
+            cached_types[t] = type2geneology[t][-1]
+        return cached_types[t]
+
+    type_tuple = tuple(sorted(types))
+    if type_tuple in cached_types:
+        return cached_types[type_tuple]
+    else:
+        geneologies = [type2geneology[t] for t in types]
+        min_len = min([len(x) for x in geneologies])
+        arr = np.array([gen[:min_len] for gen in geneologies])
+        unique_types = np.unique(arr[:, 0])
+        if len(unique_types) > 1:
+            output_types = ", ".join(list(set([x[-1] for x in geneologies])))
+            cached_types[type_tuple] = output_types
+            return output_types
+        else:
+            for i in np.arange(1, arr.shape[1]):
+                curr_unique = np.unique(arr[:, i])
+
+                if len(curr_unique) > 1 or i >= 3:
+                    cached_types[type_tuple] = unique_types[0]
+                    return unique_types[0]
+                else:
+                    unique_types = curr_unique
+
+
 def process_ontology(ontology: BiomedicalOntology, data_path: str):
     """
     This function prepares the entity data : dictionary.pickle
@@ -37,7 +71,7 @@ def process_ontology(ontology: BiomedicalOntology, data_path: str):
     # Check if equivalent CUIs are present for the first entity
     first_entity_cui = next(iter(ontology.entities))
     equivalant_cuis = bool(ontology.entities[first_entity_cui].equivalant_cuis)
-
+    print("equivalant cuis :", equivalant_cuis)
     "If dictionary already processed, load it else process and load it"
     entity_dictionary_pkl_path = os.path.join(data_path, "dictionary.pickle")
 
@@ -50,40 +84,39 @@ def process_ontology(ontology: BiomedicalOntology, data_path: str):
 
     ontology_entities = []
     for cui, entity in tqdm(ontology.entities.items()):
-        if ontology.name == "ncbi_disease":
-            entity.types[0] = "Disease"
+        new_entity = {}
 
-        if entity.aliases != "":
-            if entity.definition != "":
-                new_entity = {
-                    "type": {entity.types[0]},
-                    "cui": entity.cui,
-                    "title": entity.name,
-                    "description": f"{entity.name} ( {entity.types[0]} : {entity.aliases} ) [{entity.definition}]",
-                }
+        if ontology.name.lower() in ["umls", "mesh"]:
+            with open(os.path.join(data_path, "type2geneology.json"), "r") as f:
+                type2geneology = ujson.load(f)
+            entity.types = get_type_gcd(entity.types, type2geneology)
+
+        new_entity["cui"] = entity.cui
+        new_entity["title"] = entity.name
+        new_entity["types"] = f"{entity.types}"
+
+        if entity.aliases:
+            if entity.definition:
+                new_entity["description"] = (
+                    f"{entity.name} ( {entity.types} : {entity.aliases} ) [{entity.definition}]"
+                )
+
             else:
-                new_entity = {
-                    "type": {entity.types[0]},
-                    "cui": entity.cui,
-                    "title": entity.name,
-                    "description": f"{entity.name} ( {entity.types[0]} : {entity.aliases} )",
-                }
+                new_entity["description"] = (
+                    f"{entity.name} ( {entity.types} : {entity.aliases} )"
+                )
 
         else:
-            if entity.definition != "":
-                new_entity = {
-                    "type": {entity.types[0]},
-                    "cui": entity.cui,
-                    "title": entity.name,
-                    "description": f"{entity.name} ( {entity.types[0]}) [{entity.definition}]",
-                }
+            if entity.definition:
+                new_entity["description"] = (
+                    f"{entity.name} ({entity.types}) [{entity.definition}]"
+                )
             else:
-                new_entity = {
-                    "type": {entity.types[0]},
-                    "cui": entity.cui,
-                    "title": entity.name,
-                    "description": f"{entity.name} ( {entity.types[0]})",
-                }
+                new_entity["description"] = f"{entity.name} ({entity.types})"
+
+        if equivalant_cuis:
+            new_entity["cuis"] = entity.equivalant_cuis
+
         ontology_entities.append(new_entity)
 
     # Check if the directory exists, and create it if it does not
@@ -103,7 +136,6 @@ def process_mention_dataset(
     ontology: BiomedicalOntology,
     dataset: str,
     data_path: str,
-    resolve_abbrevs=False,
     path_to_abbrev=None,
 ):
     """
@@ -181,7 +213,7 @@ def process_mention_dataset(
             mention = d["text"]
 
             # Resolve abbreviaions if desired
-            if resolve_abbrevs and abbrev_dict is not None:
+            if abbrev_dict is not None:
                 deabbreviated_mention = resolve_abbreviation(
                     doc_id, mention, abbrev_dict
                 )
