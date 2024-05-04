@@ -10,9 +10,14 @@ from bioel.utils.dataset_consts import *
 from datasets import load_dataset
 
 
-def load_bigbio_dataset(dataset_name, abbrev=False, path_to_abbrev=None):
+def load_bigbio_dataset(dataset_name):
     """
     Load BigBio dataset and include abbreviations if specified.
+
+    Params
+    ------
+    - dataset_name : str
+        Name of the dataset to load
     """
     # Load the dataset
     if dataset_name in {"medmentions_st21pv", "medmentions_full"}:
@@ -28,34 +33,47 @@ def load_bigbio_dataset(dataset_name, abbrev=False, path_to_abbrev=None):
             trust_remote_code=True,
         )
 
+    return dataset
+
+
+def add_deabbreviations(dataset, path_to_abbrev):
+    """
+    Function to add deabbreviated mentions to the entities in the dataset
+
+    Params
+    ------
+    - dataset : DatasetDict
+        The dataset to which deabbreviations need to be added
+    - path_to_abbrev : str
+        Path to the JSON file containing abbreviations
+    """
+
     # If abbreviations are required, load the JSON file and update the dataset
-    if abbrev:
-        if not os.path.exists(path_to_abbrev):
-            # Output a message instructing the user to create the file
-            raise FileNotFoundError(
-                f"The file {path_to_abbrev} does not exist. \n Create the abbreviations.json file first using create_abbrev function from solve_abbreviations.py"
-            )
+    if not os.path.exists(path_to_abbrev):
+        # Output a message instructing the user to create the file
+        raise FileNotFoundError(
+            f"The file {path_to_abbrev} does not exist. \n Create the abbreviations.json file first using create_abbrev function from solve_abbreviations.py"
+        )
 
-        with open(path_to_abbrev, "r") as f:
-            abbreviations = ujson.load(f)
+    with open(path_to_abbrev, "r") as f:
+        abbreviations = ujson.load(f)
 
-        # Update the 'entities' in the dataset with abbreviations
-        for split in dataset.keys():
-            dataset[split] = dataset[split].map(
-                lambda example: {
-                    "entities": [
-                        {
-                            **entity,
-                            "abbreviation": match_abbreviation(
-                                entity, example["document_id"], abbreviations
-                            ),
-                        }
-                        for entity in example["entities"]
-                    ]
-                },
-                batched=False,
-            )
-
+    # Update the 'entities' in the dataset with deabbreviated mentions
+    for split in dataset.keys():
+        dataset[split] = dataset[split].map(
+            lambda example: {
+                "entities": [
+                    {
+                        **entity,
+                        "deabbreviated_mention": resolve_abbreviation(
+                            example["document_id"], entity["text"][0], abbreviations
+                        ),
+                    }
+                    for entity in example["entities"]
+                ]
+            },
+            batched=False,
+        )
     return dataset
 
 
@@ -173,7 +191,7 @@ def dataset_to_df(
         "db_ids",  # list
         "split",  # string
         # "abbreviation_resolved", # bool
-        "abbreviation",  # string
+        "deabbreviated_mention",  # string
     ]
     all_lines = []
 
@@ -199,7 +217,7 @@ def dataset_to_df(
                 ]
 
                 # Get the abbreviation if it exists, else set to None or an empty string
-                abbreviation = e.get("abbreviation", None)
+                deabbreviated_mention = e.get("deabbreviated_mention", None)
 
                 # Remap entity IDs when identifier has changed in database
                 if entity_remapping_dict is not None:
@@ -230,7 +248,7 @@ def dataset_to_df(
                         new_db_ids,
                         split,
                         # abbreviation_resolved,
-                        abbreviation,
+                        deabbreviated_mention,
                     ]
                 )
 
@@ -244,7 +262,7 @@ def dataset_to_df(
                 "type": lambda x: list(set([a for a in x])),
                 "db_ids": lambda db_ids: list(set([y for x in db_ids for y in x])),
                 "split": "first",
-                "abbreviation": "first",
+                "deabbreviated_mention": "first",
             }
         )
         .reset_index()
@@ -306,16 +324,14 @@ def resolve_abbreviation(document_id, text, abbreviations_dict):
     """
     Return un-abbreviated form of entity name if it was found in abbreviations_dict, else return original text
 
-    Inputs:
-    -------------------------------
-        document_id: str
-            ID of document where mention was found
-
-        text: str
-            Text of mention
-
-        abbreviations_dict: dict
-            Dict of form {document_id:{text: unabbreviated_text}} containing abbreviations detected in each document
+    Params
+    ------
+    - document_id: str
+        ID of document where mention was found
+    - text: str
+        Text of mention
+    - abbreviations_dict: dict
+        Dict of form {document_id:{text: unabbreviated_text}} containing abbreviations detected in each document
     """
     if text in abbreviations_dict[document_id]:
         return abbreviations_dict[document_id][text]
@@ -323,13 +339,21 @@ def resolve_abbreviation(document_id, text, abbreviations_dict):
         return text
 
 
-def load_dataset_df(name, abbrev=False, path_to_abbrev=None):
+def load_dataset_df(name, path_to_abbrev=None):
     """
     Load bigbio dataset and turn into pandas dataframe
+
+    Params
+    ------
+    - name : str
+        Name of the dataset to load
+    - path_to_abbrev : str
+        Path to the JSON file containing abbreviations
     """
-    data = load_bigbio_dataset(
-        dataset_name=name, abbrev=abbrev, path_to_abbrev=path_to_abbrev
-    )
+    data = load_bigbio_dataset(dataset_name=name)
+
+    if path_to_abbrev:
+        data = add_deabbreviations(dataset=data, path_to_abbrev=path_to_abbrev)
 
     if name in CUIS_TO_EXCLUDE:
         exclude = CUIS_TO_EXCLUDE[name]
