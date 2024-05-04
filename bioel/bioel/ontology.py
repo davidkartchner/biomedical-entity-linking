@@ -222,7 +222,7 @@ class BiomedicalOntology:
             entity = BiomedicalEntity(
                 cui=element["DiseaseID"],
                 name=element["DiseaseName"],
-                types="Disease",
+                types=["Disease"],
                 aliases=element["Synonyms"],
                 definition=element["Definition"],
                 equivalant_cuis=equivalant_cuis,

@@ -117,9 +117,7 @@ class ArboelDataModule(L.LightningDataModule):
             self.hparams["model_name_or_path"]
         )
 
-        self.batch_size = self.hparams.get(
-            "train_batch_size", self.hparams.get("scoring_batch_size")
-        )
+        self.batch_size = self.hparams.get("train_batch_size")
 
         self.train_processed_data = None
         self.valid_processed_data = None
@@ -562,7 +560,7 @@ class ArboelDataModule(L.LightningDataModule):
             self.valid_tensor_data,
             batch_size=self.batch_size,
             num_workers=11,
-            drop_last=True,
+            # drop_last=True,
         )
 
     def test_dataloader(self):
@@ -571,7 +569,7 @@ class ArboelDataModule(L.LightningDataModule):
             self.test_tensor_data,
             batch_size=self.batch_size,
             num_workers=11,
-            drop_last=True,
+            # drop_last=True,
         )
 
 

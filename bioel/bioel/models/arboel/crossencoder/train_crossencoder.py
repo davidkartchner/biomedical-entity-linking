@@ -22,7 +22,7 @@ def main(args):
     model_checkpoint = ModelCheckpoint(
         monitor="Accuracy",  # Metric to monitor
         dirpath=args["output_path"],  # Directory to save the model
-        filename=f"{current_time}-{{epoch}}-{{max_acc:.2f}}",  # Saves the model with epoch and val_loss in the filename
+        filename=f"{current_time}-{{epoch}}-{{Accuracy:.2f}}",  # Saves the model with epoch and val_loss in the filename
         save_top_k=1,  # Number of best models to save; -1 means save all of them
         mode="max",  # 'max' means the highest max_acc will be considered as the best model
         verbose=True,  # Logs a message whenever a model checkpoint is saved

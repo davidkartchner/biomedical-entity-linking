@@ -694,7 +694,7 @@ class BlinkParser(argparse.ArgumentParser):
         parser.add_argument(
             "--equivalent_cuis",
             action="store_true",
-            help="Whether the ontology has equivalent cuis or not",
+            help="Whether the ontology has equivalent cuis or not for candidates evaluation",
         )
 
         parser.add_argument(
@@ -712,12 +712,6 @@ class BlinkParser(argparse.ArgumentParser):
         )
 
         parser.add_argument(
-            "--cross_encoder",
-            action="store_true",
-            help="Create .t7 file for cross_encoder reranking",
-        )
-
-        parser.add_argument(
             "--top_candidates_path",
             default=None,
             type=str,
@@ -732,10 +726,10 @@ class BlinkParser(argparse.ArgumentParser):
         )
 
         parser.add_argument(
-            "--compute_macro_avg",
-            type=bool,
-            default=True,
-            help="Whether to compute the macro average, if missing, during BLINK-style cross-encoder eval (val or test).",
+            "--score_batch_size",
+            default=8,
+            type=int,
+            help="Batch size for cross encoder evaluation.",
         )
 
     def add_joint_train_args(self, args=None):

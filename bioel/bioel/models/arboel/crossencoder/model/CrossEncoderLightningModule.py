@@ -349,6 +349,8 @@ class LitCrossEncoder(L.LightningModule):
 
         if (
             self.test_results["filtered_length"]
+            - self.test_results["filtered_length"]
+            % self.trainer.datamodule.batch_size  # remove last batch
             == self.test_results["nb_samples_evaluated"]
         ):
             for men in self.trainer.datamodule.test_data["mention_data"]:
