@@ -1,4 +1,5 @@
 import os
+import io
 import json
 import pickle
 import logger
@@ -11,6 +12,7 @@ from typing import Optional
 
 from torch.utils.data import DataLoader
 import bioel.models.arboel.biencoder.data.data_process as data_process
+from bioel.ontology import BiomedicalOntology
 from bioel.models.arboel.biencoder.data.data_utils import process_mention_dataset
 from bioel.models.arboel.biencoder.model.eval_cluster_linking import (
     filter_by_context_doc_id,
@@ -142,12 +144,21 @@ class ArboelDataModule(L.LightningDataModule):
 
         # if the full path to file exist, no need to prepare them, they are already ready
         if not os.path.isfile(self.train_data):
+
+            # Load the ontology object
+            with open(
+                os.path.join(
+                    self.hparams["data_path"],
+                    f"{self.hparams['ontology']}_object.pickle",
+                ),
+                "rb",
+            ) as f:
+                self.ontology_object = pickle.load(f)
+
             process_mention_dataset(
-                ontology=self.hparams["ontology"],
+                ontology=self.hparams["ontology_object"],
                 dataset=self.hparams["dataset"],
                 data_path=self.data_path,
-                ontology_dir=self.hparams["ontology_dir"],
-                resolve_abbrevs=self.hparams["abbrevs"],
                 path_to_abbrev=self.hparams["path_to_abbrev"],
             )
 

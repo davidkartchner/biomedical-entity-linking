@@ -227,6 +227,7 @@ def get_data_loader(
     dataloader = DataLoader(
         tensor_data,
         shuffle=shuffle,
+        num_workers=47,
         batch_size=params[
             "train_batch_size" if data_split == "train" else "eval_batch_size"
         ],
@@ -328,6 +329,7 @@ class CrossEncoderDataModule(L.LightningDataModule):
                 candidate_length=self.hparams["max_context_length"],
                 max_seq_length=self.hparams["max_seq_length"],
                 pickle_src_path=self.hparams["data_path"],
+                shuffle=False,
                 logger=logger,
                 inject_ground_truth=self.hparams["inject_eval_ground_truth"],
                 return_data=True,
@@ -344,6 +346,7 @@ class CrossEncoderDataModule(L.LightningDataModule):
                 candidate_length=self.hparams["max_context_length"],
                 max_seq_length=self.hparams["max_seq_length"],
                 pickle_src_path=self.hparams["data_path"],
+                shuffle=False,
                 logger=logger,
                 inject_ground_truth=self.hparams["inject_eval_ground_truth"],
                 return_data=True,

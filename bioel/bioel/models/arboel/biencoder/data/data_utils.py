@@ -18,7 +18,11 @@ from bioel.utils.bigbio_utils import (
     dataset_to_df,
 )
 
-from bioel.utils.bigbio_utils import load_bigbio_dataset, resolve_abbreviation
+from bioel.utils.bigbio_utils import (
+    load_bigbio_dataset,
+    resolve_abbreviation,
+    add_deabbreviations,
+)
 from bioel.ontology import BiomedicalOntology
 
 
@@ -27,6 +31,10 @@ def get_type_gcd(types, type2geneology, cached_types: dict = None):
     Find the most granular single parent type for an entity with multiple types
     If an entity is assigned multiple types with disjoint type hierarchies
     """
+    # Initialize cached_types if it is None
+    if cached_types is None:
+        cached_types = {}
+
     if len(types) == 1:
         t = types[0]
         if t not in cached_types:
@@ -87,7 +95,7 @@ def process_ontology(ontology: BiomedicalOntology, data_path: str):
         new_entity = {}
 
         if ontology.name.lower() in ["umls", "mesh"]:
-            with open(os.path.join(data_path, "type2geneology.json"), "r") as f:
+            with open(os.path.join(data_path, "tui2type_hierarchy.json"), "r") as f:
                 type2geneology = ujson.load(f)
             entity.types = get_type_gcd(entity.types, type2geneology)
 
@@ -160,9 +168,12 @@ def process_mention_dataset(
     - data_path : str
     Path where to load and save dictionary.pickle
     """
-    data = load_bigbio_dataset(dataset_name=dataset, path_to_abbrev=path_to_abbrev)
+    data = load_bigbio_dataset(dataset_name=dataset)
     exclude = CUIS_TO_EXCLUDE[dataset]
     remap = CUIS_TO_REMAP[dataset]
+
+    if path_to_abbrev:
+        data = add_deabbreviations(dataset=data, path_to_abbrev=path_to_abbrev)
 
     entities, equivalant_cuis = process_ontology(ontology, data_path)
 

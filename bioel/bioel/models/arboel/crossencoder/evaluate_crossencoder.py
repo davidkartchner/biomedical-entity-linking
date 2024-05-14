@@ -19,7 +19,7 @@ def main(args):
     )
 
     trainer = L.Trainer(
-        # limit_test_batches=1,
+        limit_test_batches=1,
         devices=args["devices"],
         accelerator="gpu",
         strategy="ddp_find_unused_parameters_true",

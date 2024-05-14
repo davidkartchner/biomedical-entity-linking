@@ -102,11 +102,20 @@ def accuracy(out, labels, return_bool_arr=False):
     return np.sum(outputs == labels)
 
 
+def recall(out, labels, k, return_bool_arr=False):
+    top_k_indices = np.argsort(-out, axis=1)[:, :k]
+    matches = np.any(top_k_indices == labels[:, None], axis=1)
+    if return_bool_arr:
+        return matches, top_k_indices
+    return matches
+
+
 def evaluate_single_batch(
     reranker,
     batch,
     logger,
     context_length,
+    recall_k=None,
     mention_data=None,
     compute_macro_avg=False,
     store_failure_success=False,
@@ -132,10 +141,12 @@ def evaluate_single_batch(
     logits = logits.detach().cpu().numpy()
     label_ids = label_input.cpu().numpy()
 
-    tmp_eval_hits, predicted = accuracy(logits, label_ids, return_bool_arr=True)
-    tmp_eval_accuracy = np.sum(tmp_eval_hits)
+    # Accuracy
+    tmp_eval_hits, predicted = accuracy(
+        out=logits, labels=label_ids, return_bool_arr=True
+    )
+    eval_accuracy = np.sum(tmp_eval_hits)
 
-    eval_accuracy = tmp_eval_accuracy
     nb_eval_examples = context_input.size(0)
 
     if compute_macro_avg:
@@ -169,6 +180,17 @@ def evaluate_single_batch(
     results["correct_pred"] = int(eval_accuracy)
 
     print(f"Eval: Accuracy: {eval_accuracy/nb_eval_examples*100}%")
+
+    # Recall@k
+    if recall_k:
+        results["recall_k"] = collections.defaultdict(int)
+        for k in recall_k:
+            recall_tmp_eval_hits, recall_predicted = recall(
+                out=logits, labels=label_ids, k=k, return_bool_arr=True
+            )
+            eval_recall = np.sum(recall_tmp_eval_hits)
+            results["recall_k"][k] = int(eval_recall)
+            print(f"Recall@{k}: {eval_recall/nb_eval_examples*100}%")
 
     if compute_macro_avg:
         results["n_hits_per_type"] = n_hits_per_type
@@ -270,6 +292,7 @@ class LitCrossEncoder(L.LightningModule):
             "n_mentions_per_type": collections.defaultdict(int),
             "n_hits_per_type": collections.defaultdict(int),
             "n_evaluated_per_type": collections.defaultdict(int),
+            "recall_k": collections.defaultdict(int),
         }
 
     def test_step(self, batch, batch_idx):
@@ -279,6 +302,7 @@ class LitCrossEncoder(L.LightningModule):
             batch=batch,
             logger=logger,
             context_length=self.hparams["max_context_length"],
+            recall_k=self.hparams["recall_k_list"],
             mention_data=self.trainer.datamodule.test_data,
             compute_macro_avg=True,
             store_failure_success=True,
@@ -350,7 +374,7 @@ class LitCrossEncoder(L.LightningModule):
         if (
             self.test_results["filtered_length"]
             - self.test_results["filtered_length"]
-            % self.trainer.datamodule.batch_size  # remove last batch
+            % self.hparams["eval_batch_size"]  # remove last batch
             == self.test_results["nb_samples_evaluated"]
         ):
             for men in self.trainer.datamodule.test_data["mention_data"]:
@@ -372,6 +396,15 @@ class LitCrossEncoder(L.LightningModule):
             self.log(
                 "Unnormalized macro_avg_acc : Average accuracy across all types (Including mentions without the correct cui in top candidates)",
                 self.test_results["unnormalized_macro_avg_acc"],
+                sync_dist=True,
+            )
+
+        for k in self.hparams["recall_k_list"]:
+            self.log(
+                f"Recall@{k}",
+                self.test_results["recall_k"][k]
+                / self.test_results["nb_samples_evaluated"]
+                * 100,
                 sync_dist=True,
             )
 

@@ -120,8 +120,6 @@ class CrossEncoderRanker(torch.nn.Module):
 
     def forward(self, input_idx, label_input, context_len):
         scores = self.score_candidate(input_idx, context_len)
-        # print("scores :", scores)
-        # print("label_input :", label_input)
         loss = F.cross_entropy(scores, label_input, reduction="mean")
         return loss, scores
 

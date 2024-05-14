@@ -542,6 +542,7 @@ def evaluate_test(
                 (df["text"] == test_processed_data[idx]["mention_name"])
                 & (df["mention_id"] == test_processed_data[idx]["mention_id"])
             ]
+
             if not filtered_df.empty:
                 mention_dict = filtered_df.iloc[0].to_dict()
             else:
@@ -570,8 +571,7 @@ def evaluate_test(
 
             recall_idx = np.argwhere(nn_ent_idxs[idx] == gold_idxs[0])
             if len(recall_idx) != 0:
-                recall_idx = int(recall_idx)
-                recall_idxs[recall_idx] += 1.0
+                recall_idxs[int(recall_idx)] += 1.0
                 for recall_k in recall_accuracy:
                     if recall_idx < recall_k:
                         recall_accuracy[recall_k] += 1.0
@@ -1257,7 +1257,9 @@ class LitArboel(L.LightningModule):
             accumulate_grad_batches=self.trainer.accumulate_grad_batches,
         )
         print("training loss :", train_loss)
-        self.log("train loss :", train_loss, on_step=True, on_epoch=True)
+        self.log(
+            "train loss :", train_loss, on_step=True, on_epoch=True, sync_dist=True
+        )
 
         return train_loss
 

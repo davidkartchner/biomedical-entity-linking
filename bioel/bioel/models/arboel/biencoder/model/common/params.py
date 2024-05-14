@@ -9,6 +9,7 @@
 # Provide an argument parser and default command line options for using BLINK.
 import argparse
 import importlib
+import json
 import os
 import sys
 import datetime
@@ -462,9 +463,10 @@ class BlinkParser(argparse.ArgumentParser):
         )
 
         parser.add_argument(
-            "--abbrevs",
-            action="store_true",
-            help="Whether to add abbreviations for dataset or not",
+            "--path_to_abbrev",
+            default=None,
+            type=str,
+            help="Path to abbreviation.json file",
         )
 
         parser.add_argument(
@@ -472,6 +474,18 @@ class BlinkParser(argparse.ArgumentParser):
             default=None,
             type=str,
             help="Path to the model for testing the biencoder",
+        )
+
+        parser.add_argument(
+            "--ontology_dict",
+            type=json.loads,
+            help='JSON string with ontology info. Example: \'{"name":"name","filepath":"/path/to/file"}\'',
+        )
+
+        parser.add_argument(
+            "--load_function",
+            type=str,
+            help="Function to load ontology, e.g., load_medic, load_mesh, load_umls",
         )
 
     def add_eval_args(self, args=None):
@@ -550,6 +564,9 @@ class BlinkParser(argparse.ArgumentParser):
             type=int,
             default=16,
             help="Number of kNN entity candidates to fetch to calculate the model's recall accuracy",
+        )
+        parser.add_argument(
+            "--recall_k_list", nargs="+", type=int, help="List of k values for recall"
         )
         parser.add_argument(
             "--only_recall",
@@ -730,6 +747,18 @@ class BlinkParser(argparse.ArgumentParser):
             default=8,
             type=int,
             help="Batch size for cross encoder evaluation.",
+        )
+
+        parser.add_argument(
+            "--ontology_dict",
+            type=json.loads,
+            help='JSON string with ontology info. Example: \'{"name":"name","filepath":"/path/to/file"}\'',
+        )
+
+        parser.add_argument(
+            "--load_function",
+            type=str,
+            help="Function to load ontology, e.g., load_medic, load_mesh, load_umls",
         )
 
     def add_joint_train_args(self, args=None):

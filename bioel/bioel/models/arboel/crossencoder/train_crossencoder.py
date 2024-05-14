@@ -22,7 +22,7 @@ def main(args):
     model_checkpoint = ModelCheckpoint(
         monitor="Accuracy",  # Metric to monitor
         dirpath=args["output_path"],  # Directory to save the model
-        filename=f"{current_time}-{{epoch}}-{{Accuracy:.2f}}",  # Saves the model with epoch and val_loss in the filename
+        filename=f"crossencoder_{current_time}-{{epoch}}-{{Accuracy:.2f}}",  # Saves the model with epoch and val_loss in the filename
         save_top_k=1,  # Number of best models to save; -1 means save all of them
         mode="max",  # 'max' means the highest max_acc will be considered as the best model
         verbose=True,  # Logs a message whenever a model checkpoint is saved
@@ -31,7 +31,7 @@ def main(args):
     wandb_logger = WandbLogger(project=args["experiment"])
 
     trainer = L.Trainer(
-        limit_val_batches=30,
+        limit_val_batches=20,
         # num_sanity_val_steps=0,
         # fast_dev_run=True,
         max_epochs=args["num_train_epochs"],

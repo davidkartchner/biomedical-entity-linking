@@ -8,11 +8,34 @@ from datetime import datetime
 from lightning.pytorch.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 import lightning as L
+from bioel.ontology import BiomedicalOntology
 from bioel.models.arboel.biencoder.model.common.params import BlinkParser
+import os
+import pickle
 
 
 def main(args):
+    os.environ["WANDB_SILENT"] = "true"
     print("Current seed:", args["seed"])
+
+    # Check if the function name provided is an actual function of BiomedicalOntology
+    if hasattr(BiomedicalOntology, args["load_function"]):
+        load_func = getattr(BiomedicalOntology, args["load_function"])
+
+        if args["ontology_dict"]:
+            ontology_object = load_func(**args["ontology_dict"])
+            print(f"Ontology loaded successfully. Name: {ontology_object.name}")
+        else:
+            raise ValueError("No ontology data provided.")
+    else:
+        raise ValueError(
+            f"Error: {args['load_function']} is not a valid function for BiomedicalOntology."
+        )
+
+    with open(
+        os.path.join(args["data_path"], f"{args['ontology']}_object.pickle"), "wb"
+    ) as f:
+        pickle.dump(ontology_object, f)
 
     data_module = ArboelDataModule(params=args)
 
@@ -22,7 +45,7 @@ def main(args):
     model_checkpoint = ModelCheckpoint(
         monitor="max_acc",  # Metric to monitor
         dirpath=args["output_path"],  # Directory to save the model
-        filename=f"{current_time}-{{epoch}}-{{max_acc:.2f}}",  # Saves the model with epoch and val_loss in the filename
+        filename=f"biencoder_{current_time}-{{epoch}}-{{max_acc:.2f}}",  # Saves the model with epoch and val_loss in the filename
         save_top_k=1,  # Number of best models to save; -1 means save all of them
         mode="max",  # 'max' means the highest max_acc will be considered as the best model
         verbose=True,  # Logs a message whenever a model checkpoint is saved

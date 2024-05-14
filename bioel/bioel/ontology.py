@@ -323,11 +323,10 @@ class BiomedicalOntology:
             abbrev: str (optional)
             api_key: str (optional)
         """
-
         entities = {}
         types = []
 
-        logger.info(f"Reading MESH from {filepath}")
+        logger.info(f"Reading MESH from : {filepath}")
         umls = UmlsMappings(umls_dir=filepath, umls_api_key=api_key)
 
         # Get the Canonial Names
@@ -363,14 +362,18 @@ class BiomedicalOntology:
             prefixes={"MSH": "MESH"},
             lowercase=lowercase,
         )
-
-        for cui, name in tqdm(mesh_to_name.items()):
+        i = 0
+        for cui, _name in tqdm(mesh_to_name.items()):
             ent_type = mesh_to_types[cui]
-            other_aliases = [x for x in mesh_to_alias[cui] if x != name]
+            # ent_type = mesh_to_groups[cui][0]
+            # if i < 1:
+            #     print(f"{mesh_to_groups[cui][0]=}")
+            #     print(f"{mesh_to_types[cui]=}")
+            other_aliases = [x for x in mesh_to_alias[cui] if x != _name]
             joined_aliases = " ; ".join(other_aliases)
             entity = BiomedicalEntity(
                 cui=cui,
-                name=name,
+                name=_name,
                 types=ent_type,
                 aliases=joined_aliases,
                 definition=(
