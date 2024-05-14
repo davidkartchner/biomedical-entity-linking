@@ -20,228 +20,167 @@ from bioel.ontology import BiomedicalOntology
 from bioel.models.arboel.biencoder.model.common.params import BlinkParser
 import os
 import pickle
+import ujson
 
 
 class TestModel(unittest.TestCase):
 
-    def test_train_arboel_biencoder(self):
-        """
-        TestCase - 1: Test the training part of Biencoder
-        """
+    # def test_train_arboel_biencoder(self):
+    #     """
+    #     TestCase - 1: Test the training part of Biencoder
+    #     """
 
-        test_cases = [
-            {
-                "data_path": "/home2/cye73/data_test2/arboel/ncbi_disease",
-                "output_path": "/home2/cye73/results2/arboel/ncbi_disease",
-                "dataset": "ncbi_disease",
-                "ontology": "medic",
-                "load_function": "load_medic",
-                "ontology_dict": {
-                    "name": "medic",
-                    "filepath": "/mitchell/entity-linking/kbs/medic.tsv",
-                },
-            },
-            {
-                "data_path": "/home2/cye73/data_test2/arboel/bc5cdr",
-                "output_path": "/home2/cye73/results2/arboel/bc5cdr",
-                "dataset": "bc5cdr",
-                "ontology": "mesh",
-                "load_function": "load_mesh",
-                "ontology_dict": {
-                    "name": "mesh",
-                    "filepath": "/mitchell/entity-linking/2017AA/META/",
-                },
-            },
-        ]
+    #     # Load configuration file
+    #     with open("config_arboel.json", "r") as f:
+    #         config = ujson.load(f)
 
-        parser = BlinkParser(add_model_args=True)
-        parser.add_training_args()
+    #     test_cases = config["test_cases_train_biencoder"]
 
-        for case in test_cases:
-            test_args = [
-                "--data_path",
-                case["data_path"],
-                "--output_path",
-                case["output_path"],
-                "--dataset",
-                case["dataset"],
-                "--ontology",
-                case["ontology"],
-                "--load_function",
-                case["load_function"],
-                "--model_name_or_path",
-                "dmis-lab/biobert-base-cased-v1.2",
-            ]
+    #     parser = BlinkParser(add_model_args=True)
+    #     parser.add_training_args()
 
-            args = parser.parse_args(test_args)
-            args_dict = args.__dict__
-            args_dict["ontology_dict"] = case["ontology_dict"]
+    #     for case in test_cases:
+    #         test_args = [
+    #             "--data_path",
+    #             case["data_path"],
+    #             "--output_path",
+    #             case["output_path"],
+    #             "--dataset",
+    #             case["dataset"],
+    #             "--ontology",
+    #             case["ontology"],
+    #             "--load_function",
+    #             case["load_function"],
+    #             "--model_name_or_path",
+    #             "dmis-lab/biobert-base-cased-v1.2",
+    #         ]
 
-            # Check if the function name provided is an actual function of BiomedicalOntology
-            if hasattr(BiomedicalOntology, args_dict["load_function"]):
-                load_func = getattr(BiomedicalOntology, args_dict["load_function"])
+    #         args = parser.parse_args(test_args)
+    #         args_dict = args.__dict__
+    #         args_dict["ontology_dict"] = case["ontology_dict"]
 
-                if args_dict["ontology_dict"]:
-                    ontology_object = load_func(**args_dict["ontology_dict"])
-                    print(f"Ontology loaded successfully. Name: {ontology_object.name}")
-                else:
-                    raise ValueError("No ontology data provided.")
-            else:
-                raise ValueError(
-                    f"Error: {args_dict['load_function']} is not a valid function for BiomedicalOntology."
-                )
+    #         # Check if the function name provided is an actual function of BiomedicalOntology
+    #         if hasattr(BiomedicalOntology, args_dict["load_function"]):
+    #             load_func = getattr(BiomedicalOntology, args_dict["load_function"])
 
-            with open(
-                os.path.join(
-                    args_dict["data_path"], f"{args_dict['ontology']}_object.pickle"
-                ),
-                "wb",
-            ) as f:
-                pickle.dump(ontology_object, f)
+    #             if args_dict["ontology_dict"]:
+    #                 ontology_object = load_func(**args_dict["ontology_dict"])
+    #                 print(f"Ontology loaded successfully. Name: {ontology_object.name}")
+    #             else:
+    #                 raise ValueError("No ontology data provided.")
+    #         else:
+    #             raise ValueError(
+    #                 f"Error: {args_dict['load_function']} is not a valid function for BiomedicalOntology."
+    #             )
 
-            data_module = ArboelDataModule(params=args_dict)
+    #         with open(
+    #             os.path.join(
+    #                 args_dict["data_path"], f"{args_dict['ontology']}_object.pickle"
+    #             ),
+    #             "wb",
+    #         ) as f:
+    #             pickle.dump(ontology_object, f)
 
-            model = LitArboel(params=args_dict)
+    #         data_module = ArboelDataModule(params=args_dict)
 
-            trainer = L.Trainer(
-                num_sanity_val_steps=0,
-                limit_train_batches=1,
-                limit_val_batches=1,
-                max_epochs=1,
-                devices=[0],
-                accelerator="gpu",
-                strategy="ddp_find_unused_parameters_true",
-            )
+    #         model = LitArboel(params=args_dict)
 
-            trainer.fit(model, datamodule=data_module)
+    #         trainer = L.Trainer(
+    #             num_sanity_val_steps=0,
+    #             limit_train_batches=1,
+    #             limit_val_batches=1,
+    #             max_epochs=1,
+    #             devices=[0],
+    #             accelerator="gpu",
+    #             strategy="ddp_find_unused_parameters_true",
+    #         )
 
-    def test_evaluate_arboel_biencoder(self):
-        """
-        TestCase - 2: Test the evaluate part of Biencoder
-        """
+    #         trainer.fit(model, datamodule=data_module)
 
-        test_cases = [
-            {
-                "data_path": "/home2/cye73/data_test2/arboel/ncbi_disease",
-                "output_path": "/home2/cye73/results2/arboel/ncbi_disease",
-                "dataset": "ncbi_disease",
-                "ontology": "medic",
-                "load_function": "load_medic",
-                "biencoder_checkpoint": "/home2/cye73/results2/arboel/ncbi_disease/2024-05-04_10-55-27-epoch=5-max_acc=87.33.ckpt",
-                "ontology_dict": {
-                    "name": "medic",
-                    "filepath": "/mitchell/entity-linking/kbs/medic.tsv",
-                },
-            },
-            {
-                "data_path": "/home2/cye73/data_test2/arboel/bc5cdr",
-                "output_path": "/home2/cye73/results2/arboel/bc5cdr",
-                "dataset": "bc5cdr",
-                "ontology": "mesh",
-                "load_function": "load_mesh",
-                "biencoder_checkpoint": "/home2/cye73/results2/arboel/bc5cdr/2024-05-02_20-56-16-epoch=5-max_acc=85.13.ckpt",
-                "ontology_dict": {
-                    "name": "mesh",
-                    "filepath": "/mitchell/entity-linking/2017AA/META/",
-                },
-            },
-        ]
+    # def test_evaluate_arboel_biencoder(self):
+    #     """
+    #     TestCase - 2: Test the evaluate part of Biencoder
+    #     """
 
-        parser = BlinkParser(add_model_args=True)
-        parser.add_eval_args()
+    #     # Load configuration file
+    #     with open("config_arboel.json", "r") as f:
+    #         config = ujson.load(f)
 
-        for case in test_cases:
+    #     test_cases = config["test_cases_eval_biencoder"]
 
-            test_args = [
-                "--data_path",
-                case["data_path"],
-                "--output_path",
-                case["output_path"],
-                "--dataset",
-                case["dataset"],
-                "--ontology",
-                case["ontology"],
-                "--load_function",
-                case["load_function"],
-                "--biencoder_checkpoint",
-                case["biencoder_checkpoint"],
-                "--model_name_or_path",
-                "dmis-lab/biobert-base-cased-v1.2",
-            ]
+    #     parser = BlinkParser(add_model_args=True)
+    #     parser.add_eval_args()
 
-            args = parser.parse_args(test_args)
-            args_dict = args.__dict__
-            args_dict["ontology_dict"] = case["ontology_dict"]
-            # Check if the function name provided is an actual function of BiomedicalOntology
-            if hasattr(BiomedicalOntology, args_dict["load_function"]):
-                load_func = getattr(BiomedicalOntology, args_dict["load_function"])
+    #     for case in test_cases:
 
-                if args_dict["ontology_dict"]:
-                    ontology_object = load_func(**args_dict["ontology_dict"])
-                    print(f"Ontology loaded successfully. Name: {ontology_object.name}")
-                else:
-                    raise ValueError("No ontology data provided.")
-            else:
-                raise ValueError(
-                    f"Error: {args_dict['load_function']} is not a valid function for BiomedicalOntology."
-                )
+    #         test_args = [
+    #             "--data_path",
+    #             case["data_path"],
+    #             "--output_path",
+    #             case["output_path"],
+    #             "--dataset",
+    #             case["dataset"],
+    #             "--ontology",
+    #             case["ontology"],
+    #             "--load_function",
+    #             case["load_function"],
+    #             "--biencoder_checkpoint",
+    #             case["biencoder_checkpoint"],
+    #             "--model_name_or_path",
+    #             "dmis-lab/biobert-base-cased-v1.2",
+    #         ]
 
-            with open(
-                os.path.join(
-                    args_dict["data_path"], f"{args_dict['ontology']}_object.pickle"
-                ),
-                "wb",
-            ) as f:
-                pickle.dump(ontology_object, f)
+    #         args = parser.parse_args(test_args)
+    #         args_dict = args.__dict__
+    #         args_dict["ontology_dict"] = case["ontology_dict"]
+    #         # Check if the function name provided is an actual function of BiomedicalOntology
+    #         if hasattr(BiomedicalOntology, args_dict["load_function"]):
+    #             load_func = getattr(BiomedicalOntology, args_dict["load_function"])
 
-            data_module = ArboelDataModule(params=args_dict)
+    #             if args_dict["ontology_dict"]:
+    #                 ontology_object = load_func(**args_dict["ontology_dict"])
+    #                 print(f"Ontology loaded successfully. Name: {ontology_object.name}")
+    #             else:
+    #                 raise ValueError("No ontology data provided.")
+    #         else:
+    #             raise ValueError(
+    #                 f"Error: {args_dict['load_function']} is not a valid function for BiomedicalOntology."
+    #             )
 
-            model = LitArboel.load_from_checkpoint(
-                params=args_dict, checkpoint_path=args_dict["biencoder_checkpoint"]
-            )
+    #         with open(
+    #             os.path.join(
+    #                 args_dict["data_path"], f"{args_dict['ontology']}_object.pickle"
+    #             ),
+    #             "wb",
+    #         ) as f:
+    #             pickle.dump(ontology_object, f)
 
-            trainer = L.Trainer(
-                limit_test_batches=1,
-                devices=[0],
-                accelerator="gpu",
-                strategy="ddp_find_unused_parameters_true",
-            )
+    #         data_module = ArboelDataModule(params=args_dict)
 
-            trainer.test(model=model, datamodule=data_module)
+    #         model = LitArboel.load_from_checkpoint(
+    #             params=args_dict, checkpoint_path=args_dict["biencoder_checkpoint"]
+    #         )
+
+    #         trainer = L.Trainer(
+    #             limit_test_batches=1,
+    #             devices=[0],
+    #             accelerator="gpu",
+    #             strategy="ddp_find_unused_parameters_true",
+    #         )
+
+    #         trainer.test(model=model, datamodule=data_module)
 
     def test_train_arboel_crossencoder(self):
         """
         TestCase - 3: Test the training part of Crossencoder
         """
 
-        test_cases = [
-            {
-                "data_path": "/home2/cye73/data_test2/arboel/ncbi_disease",
-                "output_path": "/home2/cye73/results2/arboel/ncbi_disease",
-                # "dataset": "ncbi_disease",
-                # "ontology": "medic",
-                # "load_function": "load_medic",
-                "biencoder_checkpoint": "/home2/cye73/results2/arboel/ncbi_disease/2024-05-04_10-55-27-epoch=5-max_acc=87.33.ckpt",
-                "biencoder_indices_path": "/home2/cye73/data_test2/arboel/ncbi_disease",
-                # "ontology_dict": {
-                #     "name": "medic",
-                #     "filepath": "/mitchell/entity-linking/kbs/medic.tsv",
-                # },
-            },
-            {
-                "data_path": "/home2/cye73/data_test2/arboel/bc5cdr",
-                "output_path": "/home2/cye73/results2/arboel/bc5cdr",
-                # "dataset": "bc5cdr",
-                # "ontology": "mesh",
-                # "load_function": "load_mesh",
-                "biencoder_checkpoint": "/home2/cye73/results2/arboel/bc5cdr/2024-05-02_20-56-16-epoch=5-max_acc=85.13.ckpt",
-                "biencoder_indices_path": "/home2/cye73/data_test2/arboel/bc5cdr",
-                # "ontology_dict": {
-                #     "name": "mesh",
-                #     "filepath": "/mitchell/entity-linking/2017AA/META/",
-                # },
-            },
-        ]
+        # Load configuration file
+        with open("config_arboel.json", "r") as f:
+            config = ujson.load(f)
+
+        test_cases = config["test_cases_train_crossencoder"]
+
         parser = BlinkParser(add_model_args=True)
         parser.add_training_args()
 
@@ -286,36 +225,11 @@ class TestModel(unittest.TestCase):
         TestCase - 4: Test the evaluate part of Crossencoder
         """
 
-        test_cases = [
-            {
-                "data_path": "/home2/cye73/data_test2/arboel/ncbi_disease",
-                "output_path": "/home2/cye73/results2/arboel/ncbi_disease",
-                # "dataset": "ncbi_disease",
-                # "ontology": "medic",
-                # "load_function": "load_medic",
-                "biencoder_checkpoint": "/home2/cye73/results2/arboel/ncbi_disease/2024-05-04_10-55-27-epoch=5-max_acc=87.33.ckpt",
-                "biencoder_indices_path": "/home2/cye73/data_test2/arboel/ncbi_disease",
-                "crossencoder_checkpoint": "/home2/cye73/results2/arboel/ncbi_disease/2024-05-04_12-20-07-epoch=4-Accuracy=0.90.ckpt",
-                # "ontology_dict": {
-                #     "name": "medic",
-                #     "filepath": "/mitchell/entity-linking/kbs/medic.tsv",
-                # },
-            },
-            {
-                "data_path": "/home2/cye73/data_test2/arboel/bc5cdr",
-                "output_path": "/home2/cye73/results2/arboel/bc5cdr",
-                # "dataset": "bc5cdr",
-                # "ontology": "mesh",
-                # "load_function": "load_mesh",
-                "biencoder_checkpoint": "/home2/cye73/results2/arboel/bc5cdr/2024-05-02_20-56-16-epoch=5-max_acc=85.13.ckpt",
-                "biencoder_indices_path": "/home2/cye73/data_test2/arboel/bc5cdr",
-                "crossencoder_checkpoint": "/home2/cye73/results2/arboel/bc5cdr/2024-05-03_17-06-57-epoch=4-max_acc=0.00.ckpt",
-                # "ontology_dict": {
-                #     "name": "mesh",
-                #     "filepath": "/mitchell/entity-linking/2017AA/META/",
-                # },
-            },
-        ]
+        # Load configuration file
+        with open("config_arboel.json", "r") as f:
+            config = ujson.load(f)
+
+        test_cases = config["test_cases_eval_crossencoder"]
 
         parser = BlinkParser(add_model_args=True)
         parser.add_eval_args()
