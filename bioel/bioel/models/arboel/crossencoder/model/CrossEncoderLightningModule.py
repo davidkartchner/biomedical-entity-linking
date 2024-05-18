@@ -16,14 +16,25 @@ import time
 import numpy as np
 import pickle
 import json
+import ujson
 from tqdm import tqdm, trange
 from bioel.models.arboel.biencoder.model.common.optimizer import get_bert_optimizer
+from bioel.models.arboel.biencoder.model.BiEncoderLightningModule import (
+    create_versioned_filename,
+)
 from pytorch_transformers.optimization import WarmupLinearSchedule
 from bioel.models.arboel.crossencoder.model.crossencoder import CrossEncoderRanker
 import bioel.models.arboel.biencoder.data.data_process as data_process
 from IPython import embed
 
 from bioel.logger import setup_logger
+from bioel.utils.bigbio_utils import (
+    load_bigbio_dataset,
+    dataset_to_df,
+    add_deabbreviations,
+    CUIS_TO_REMAP,
+    CUIS_TO_EXCLUDE,
+)
 
 import lightning as L
 from bioel.models.arboel.biencoder.model.common.params import BlinkParser
@@ -35,27 +46,6 @@ logger = logging.getLogger(__name__)
 from pytorch_transformers.modeling_utils import CONFIG_NAME, WEIGHTS_NAME
 
 OPTIM_SCHED_FNAME = "optim_sched.pth"
-
-
-def create_versioned_filename(base_path, base_name, extension=".json"):
-    """Create a versioned filename to avoid overwriting existing files.
-    Params:
-    - base_path (str):
-        The directory where the file will be saved.
-    base_name (str):
-        The base name of the file without the extension.
-    extension (str):
-        The file extension.
-    Returns:
-        str: A versioned filename that does not exist in the base path.
-    """
-    version = 1
-    while True:
-        new_filename = f"{base_name}{version}{extension}"
-        full_path = os.path.join(base_path, new_filename)
-        if not os.path.exists(full_path):
-            return full_path
-        version += 1
 
 
 def convert_defaultdict(d):
@@ -115,6 +105,8 @@ def evaluate_single_batch(
     batch,
     logger,
     context_length,
+    params,
+    output_eval,
     recall_k=None,
     mention_data=None,
     compute_macro_avg=False,
@@ -147,6 +139,18 @@ def evaluate_single_batch(
     )
     eval_accuracy = np.sum(tmp_eval_hits)
 
+    # Needed for the output for evaluation
+    data = load_bigbio_dataset(params["dataset"])
+    if params["path_to_abbrev"]:
+        data_with_abbrev = add_deabbreviations(
+            dataset=data, path_to_abbrev=params["path_to_abbrev"]
+        )
+    exclude = CUIS_TO_EXCLUDE[params["dataset"]]
+    remap = CUIS_TO_REMAP[params["dataset"]]
+    df = dataset_to_df(
+        data_with_abbrev, entity_remapping_dict=remap, cuis_to_exclude=exclude
+    )
+
     nb_eval_examples = context_input.size(0)
 
     if compute_macro_avg:
@@ -157,10 +161,16 @@ def evaluate_single_batch(
             n_hits_per_type[mention_type] += is_hit
 
     if store_failure_success:
+        recall_tmp_eval_hits, recall_predicted = recall(
+            out=logits, labels=label_ids, k=recall_k, return_bool_arr=True
+        )
+        eval_recall = np.sum(recall_tmp_eval_hits)
+        print(f"Recall@{recall_k}: {eval_recall/nb_eval_examples*100}%")
         for i, m_idx in enumerate(mention_idxs):
             m_idx = m_idx.item()
             men_query = processed_mention_data[m_idx]
-            dict_pred = dictionary[stored_candidates["candidates"][m_idx][predicted[i]]]
+            best_idx = recall_predicted[i][0]
+            dict_pred = dictionary[stored_candidates["candidates"][m_idx][best_idx]]
             report_obj = {
                 "mention_id": men_query["mention_id"],
                 "mention_name": men_query["mention_name"],
@@ -176,21 +186,47 @@ def evaluate_single_batch(
             }
             failsucc["success" if tmp_eval_hits[i] else "failure"].append(report_obj)
 
+            cuis_top_candidates = []
+            mention_dict = {}
+            for j in range(recall_k):
+                idx = recall_predicted[i][j]
+                dict_preds = dictionary[stored_candidates["candidates"][m_idx][idx]]
+                cuis_top_candidates.append([dict_preds["cui"]])
+
+            if ((df["mention_id"] + ".abbr_resolved") == men_query["mention_id"]).any():
+                filtered_df = df[
+                    df["mention_id"] + ".abbr_resolved" == men_query["mention_id"]
+                ].copy()
+                filtered_df["mention_id"] += ".abbr_resolved"
+
+            else:
+                filtered_df = df[df["mention_id"] == men_query["mention_id"]]
+
+            if not filtered_df.empty:
+                mention_dict = filtered_df.iloc[0].to_dict()
+            else:
+                print(
+                    "This mention name was not found in the mention dataset :",
+                    men_query["mention_id"],
+                    men_query["mention_name"],
+                )
+
+            mention_dict["candidates"] = cuis_top_candidates
+
+            if params["equivalent_cuis"]:
+                synsets = ujson.load(
+                    open(os.path.join(params["data_path"], "cui_synsets.json"))
+                )
+                mention_dict["candidates"] = [
+                    synsets[y[0]] for y in mention_dict["candidates"]
+                ]
+
+            output_eval.append(mention_dict)
+
     results["nb_samples_evaluated"] = nb_eval_examples
     results["correct_pred"] = int(eval_accuracy)
 
     print(f"Eval: Accuracy: {eval_accuracy/nb_eval_examples*100}%")
-
-    # Recall@k
-    if recall_k:
-        results["recall_k"] = collections.defaultdict(int)
-        for k in recall_k:
-            recall_tmp_eval_hits, recall_predicted = recall(
-                out=logits, labels=label_ids, k=k, return_bool_arr=True
-            )
-            eval_recall = np.sum(recall_tmp_eval_hits)
-            results["recall_k"][k] = int(eval_recall)
-            print(f"Recall@{k}: {eval_recall/nb_eval_examples*100}%")
 
     if compute_macro_avg:
         results["n_hits_per_type"] = n_hits_per_type
@@ -278,6 +314,7 @@ class LitCrossEncoder(L.LightningModule):
 
         self.n_evaluated_per_type = {}
         self.n_mentions_per_type = {}
+        self.output_eval = []
 
         self.test_results = {
             "normalized_accuracy": 0,
@@ -292,7 +329,6 @@ class LitCrossEncoder(L.LightningModule):
             "n_mentions_per_type": collections.defaultdict(int),
             "n_hits_per_type": collections.defaultdict(int),
             "n_evaluated_per_type": collections.defaultdict(int),
-            "recall_k": collections.defaultdict(int),
         }
 
     def test_step(self, batch, batch_idx):
@@ -302,7 +338,9 @@ class LitCrossEncoder(L.LightningModule):
             batch=batch,
             logger=logger,
             context_length=self.hparams["max_context_length"],
-            recall_k=self.hparams["recall_k_list"],
+            recall_k=self.hparams["recall_k"],
+            params=self.hparams,
+            output_eval=self.output_eval,
             mention_data=self.trainer.datamodule.test_data,
             compute_macro_avg=True,
             store_failure_success=True,
@@ -399,30 +437,63 @@ class LitCrossEncoder(L.LightningModule):
                 sync_dist=True,
             )
 
-        for k in self.hparams["recall_k_list"]:
-            self.log(
-                f"Recall@{k}",
-                self.test_results["recall_k"][k]
-                / self.test_results["nb_samples_evaluated"]
-                * 100,
-                sync_dist=True,
-            )
-
         self.test_results = convert_defaultdict(self.test_results)
 
-        # Store results for evaluation object
-        output_path = self.hparams["output_path"]
-        base_filename = "crossencoder_output_eval"
-        file_to_save = create_versioned_filename(output_path, base_filename)
+        # Gather results from all GPUs
+        # Store results for evaluation purposes (failure, success etc...)
+        gathered_test_results = [None] * torch.distributed.get_world_size()
+        torch.distributed.all_gather_object(gathered_test_results, self.test_results)
+        # Store results for evaluation object (recall_k, plot etc...)
+        gathered_output_eval = [None] * torch.distributed.get_world_size()
+        torch.distributed.all_gather_object(gathered_output_eval, self.output_eval)
 
-        # Now, write to the file
-        with open(file_to_save, "w") as f:
-            json.dump(self.test_results, f, indent=2)
-            print(f"\nPredictions overview saved at: {file_to_save}")
+        # Only the main process should save the combined results
+        if self.trainer.is_global_zero:
+
+            combined_test_results = gathered_test_results[0]
+            for result in gathered_test_results[1:]:
+                combined_test_results = merge_dicts(combined_test_results, result)
+
+            all_output_eval = [
+                item for sublist in gathered_output_eval for item in sublist
+            ]
+
+            eval_filename = "crossencoder_eval_results"
+            crossencoder_eval_results = create_versioned_filename(
+                self.hparams["output_path"], eval_filename
+            )
+            with open(crossencoder_eval_results, "w") as f:
+                json.dump(combined_test_results, f, indent=2)
+                print(
+                    f"\ncrossencoder_eval_results overview saved at: {crossencoder_eval_results}"
+                )
+
+            eval_filename2 = "crossencoder_output_eval"
+            crossencoder_output_eval = create_versioned_filename(
+                self.hparams["output_path"], eval_filename2
+            )
+            with open(crossencoder_output_eval, "w") as f:
+                json.dump(all_output_eval, f, indent=2)
+                print(
+                    f"\ncrossencoder_output_eval overview saved at: {crossencoder_output_eval}"
+                )
 
     def on_train_start(self):
         self.start_time = time.time()
 
     def on_train_end(self):
-        execution_time = (time.time() - self.start_time) / 60
-        logging.info(f"The training took {execution_time} minutes")
+        if self.start_time is not None:
+            execution_time = (time.time() - self.start_time) / 60
+            logging.info(f"The training took {execution_time:.2f} minutes")
+        else:
+            logging.warning("Start time not set. Unable to calculate execution time.")
+
+    def on_test_start(self):
+        self.start_time = time.time()
+
+    def on_test_end(self):
+        if self.start_time is not None:
+            execution_time = (time.time() - self.start_time) / 60
+            logging.info(f"The testing took {execution_time:.2f} minutes")
+        else:
+            logging.warning("Start time not set. Unable to calculate execution time.")

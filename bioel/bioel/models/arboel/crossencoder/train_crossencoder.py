@@ -36,7 +36,7 @@ def main(args):
         # fast_dev_run=True,
         max_epochs=args["num_train_epochs"],
         devices=args["devices"],
-        accelerator="gpu",
+        accelerator="gpu" if args["devices"] else "cpu",
         strategy="ddp_find_unused_parameters_true",
         enable_progress_bar=True,
         callbacks=[model_checkpoint],

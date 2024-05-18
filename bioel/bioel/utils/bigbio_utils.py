@@ -48,25 +48,22 @@ def add_deabbreviations(dataset, path_to_abbrev):
         Path to the JSON file containing abbreviations
     """
 
-    # If abbreviations are required, load the JSON file and update the dataset
     if not os.path.exists(path_to_abbrev):
-        # Output a message instructing the user to create the file
         raise FileNotFoundError(
-            f"The file {path_to_abbrev} does not exist. \n Create the abbreviations.json file first using create_abbrev function from solve_abbreviations.py"
+            f"The file {path_to_abbrev} does not exist. \nCreate the abbreviations.json file first using create_abbrev function from solve_abbreviations.py"
         )
 
     with open(path_to_abbrev, "r") as f:
         abbreviations = ujson.load(f)
 
-    # Update the 'entities' in the dataset with deabbreviated mentions
     for split in dataset.keys():
         dataset[split] = dataset[split].map(
             lambda example: {
                 "entities": [
                     {
                         **entity,
-                        "deabbreviated_mention": resolve_abbreviation(
-                            example["document_id"], entity["text"][0], abbreviations
+                        "deabbreviated_text": resolve_abbreviation(
+                            example["document_id"], entity["text"], abbreviations
                         ),
                     }
                     for entity in example["entities"]
@@ -74,6 +71,7 @@ def add_deabbreviations(dataset, path_to_abbrev):
             },
             batched=False,
         )
+
     return dataset
 
 
@@ -191,7 +189,7 @@ def dataset_to_df(
         "db_ids",  # list
         "split",  # string
         # "abbreviation_resolved", # bool
-        "deabbreviated_mention",  # string
+        "deabbreviated_text",  # string
     ]
     all_lines = []
 
@@ -217,7 +215,7 @@ def dataset_to_df(
                 ]
 
                 # Get the abbreviation if it exists, else set to None or an empty string
-                deabbreviated_mention = e.get("deabbreviated_mention", None)
+                deabbreviated_text = e.get("deabbreviated_text", None)
 
                 # Remap entity IDs when identifier has changed in database
                 if entity_remapping_dict is not None:
@@ -248,7 +246,7 @@ def dataset_to_df(
                         new_db_ids,
                         split,
                         # abbreviation_resolved,
-                        deabbreviated_mention,
+                        deabbreviated_text,
                     ]
                 )
 
@@ -262,7 +260,7 @@ def dataset_to_df(
                 "type": lambda x: list(set([a for a in x])),
                 "db_ids": lambda db_ids: list(set([y for x in db_ids for y in x])),
                 "split": "first",
-                "deabbreviated_mention": "first",
+                "deabbreviated_text": "first",
             }
         )
         .reset_index()
@@ -320,23 +318,26 @@ def get_right_context(doc, end, max_length=64, strip=False):
         return " ".join(doc[end:].split()[:max_length])
 
 
-def resolve_abbreviation(document_id, text, abbreviations_dict):
+def resolve_abbreviation(doc_id, texts, abbreviations):
     """
-    Return un-abbreviated form of entity name if it was found in abbreviations_dict, else return original text
+    Resolve abbreviations for a given document and list of texts using the abbreviations dictionary.
 
     Params
     ------
-    - document_id: str
-        ID of document where mention was found
-    - text: str
-        Text of mention
-    - abbreviations_dict: dict
-        Dict of form {document_id:{text: unabbreviated_text}} containing abbreviations detected in each document
+    - doc_id : str
+        Document ID to look up in abbreviations
+    - texts : list of str
+        List of texts to resolve abbreviations for
+    - abbreviations : dict
+        Dictionary containing abbreviation mappings
+
+    Returns
+    -------
+    - list of str
+        List of resolved abbreviations if found, else original texts
     """
-    if text in abbreviations_dict[document_id]:
-        return abbreviations_dict[document_id][text]
-    else:
-        return text
+    resolved_texts = [abbreviations.get(doc_id, {}).get(text, text) for text in texts]
+    return " ".join(resolved_texts)
 
 
 def load_dataset_df(name, path_to_abbrev=None):

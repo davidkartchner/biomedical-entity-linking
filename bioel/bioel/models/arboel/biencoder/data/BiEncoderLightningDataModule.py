@@ -113,7 +113,7 @@ class ArboelDataModule(L.LightningDataModule):
         super().__init__()
         self.save_hyperparameters(params)
 
-        self.data_path = self.hparams["data_path"]
+        self.data_path = self.hparams.data_path
 
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.hparams["model_name_or_path"]
@@ -156,7 +156,7 @@ class ArboelDataModule(L.LightningDataModule):
                 self.ontology_object = pickle.load(f)
 
             process_mention_dataset(
-                ontology=self.hparams["ontology_object"],
+                ontology=self.ontology_object,
                 dataset=self.hparams["dataset"],
                 data_path=self.data_path,
                 path_to_abbrev=self.hparams["path_to_abbrev"],
@@ -571,7 +571,6 @@ class ArboelDataModule(L.LightningDataModule):
             self.valid_tensor_data,
             batch_size=self.batch_size,
             num_workers=11,
-            # drop_last=True,
         )
 
     def test_dataloader(self):
@@ -580,7 +579,6 @@ class ArboelDataModule(L.LightningDataModule):
             self.test_tensor_data,
             batch_size=self.batch_size,
             num_workers=11,
-            # drop_last=True,
         )
 
 

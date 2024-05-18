@@ -36,6 +36,7 @@ from bioel.models.arboel.biencoder.model.special_partition.special_partition imp
 from bioel.utils.bigbio_utils import (
     load_bigbio_dataset,
     dataset_to_df,
+    add_deabbreviations,
     CUIS_TO_REMAP,
     CUIS_TO_EXCLUDE,
 )
@@ -52,6 +53,27 @@ logger = logging.getLogger(__name__)
 from bioel.models.arboel.biencoder.data.BiEncoderLightningDataModule import (
     ArboelDataModule,
 )
+
+
+def create_versioned_filename(base_path, base_name, extension=".json"):
+    """Create a versioned filename to avoid overwriting existing files.
+    Params:
+    - base_path (str):
+        The directory where the file will be saved.
+    base_name (str):
+        The base name of the file without the extension.
+    extension (str):
+        The file extension.
+    Returns:
+        str: A versioned filename that does not exist in the base path.
+    """
+    version = 1
+    while True:
+        new_filename = f"{base_name}{version}{extension}"
+        full_path = os.path.join(base_path, new_filename)
+        if not os.path.exists(full_path):
+            return full_path
+        version += 1
 
 
 def evaluate(
@@ -306,9 +328,15 @@ def evaluate_test(
 
     # Needed for the output for evaluation
     data = load_bigbio_dataset(params["dataset"])
+    if params["path_to_abbrev"]:
+        data_with_abbrev = add_deabbreviations(
+            dataset=data, path_to_abbrev=params["path_to_abbrev"]
+        )
     exclude = CUIS_TO_EXCLUDE[params["dataset"]]
     remap = CUIS_TO_REMAP[params["dataset"]]
-    df = dataset_to_df(data, entity_remapping_dict=remap, cuis_to_exclude=exclude)
+    df = dataset_to_df(
+        data_with_abbrev, entity_remapping_dict=remap, cuis_to_exclude=exclude
+    )
 
     # Output for evaluation object
     output_eval = []
@@ -538,17 +566,26 @@ def evaluate_test(
             cuis_top_candidates = [
                 [dict_idx_to_cui.get(index)] for index in idx_top_candidates
             ]
-            filtered_df = df[
-                (df["text"] == test_processed_data[idx]["mention_name"])
-                & (df["mention_id"] == test_processed_data[idx]["mention_id"])
-            ]
+
+            mention_id = test_processed_data[idx]["mention_id"]
+            mention_name = test_processed_data[idx]["mention_name"]
+
+            # Check if the mention_id with .abbr_resolved exists
+            if (df["mention_id"] + ".abbr_resolved" == mention_id).any():
+                filtered_df = df[
+                    (df["mention_id"] + ".abbr_resolved" == mention_id)
+                ].copy()
+                filtered_df["mention_id"] += ".abbr_resolved"
+            else:
+                filtered_df = df[df["mention_id"] == mention_id]
 
             if not filtered_df.empty:
                 mention_dict = filtered_df.iloc[0].to_dict()
             else:
                 print(
-                    "This mention name was not found in the mention dataset :",
-                    test_processed_data[idx]["mention_name"],
+                    "This mention name was not found in the mention dataset:",
+                    mention_id,
+                    mention_name,
                 )
 
             mention_dict["candidates"] = cuis_top_candidates
@@ -740,13 +777,11 @@ def evaluate_test(
         print(f"\nPredictions overview saved at: {output_file_name}.json")
 
     # Store results for evaluation object
-    eval_file_name = os.path.join(
-        output_path,
-        f"biencoder_output_eval_{__import__('calendar').timegm(__import__('time').gmtime())}.",
-    )
-    with open(f"{eval_file_name}.json", "w") as f:
+    base_filename = "biencoder_output_eval"
+    biencoder_output_eval = create_versioned_filename(output_path, base_filename)
+    with open(f"{biencoder_output_eval}", "w") as f:
         json.dump(output_eval, f, indent=2)
-        print(f"\nPredictions overview saved at: {eval_file_name}.json")
+        print(f"\nPredictions overview saved at: {biencoder_output_eval}")
 
     logger.info(
         "\nThe avg. per graph evaluation time is {} minutes\n".format(
@@ -1293,9 +1328,6 @@ class LitArboel(L.LightningModule):
         logger.info(" Num warmup steps = %d", num_warmup_steps)
         return [optimizer], [{"scheduler": scheduler, "interval": "step"}]
 
-    def on_train_start(self):
-        self.start_time = time.time()
-
     def on_train_epoch_start(self):
 
         print("on train epoch start")
@@ -1669,6 +1701,22 @@ class LitArboel(L.LightningModule):
             ),
         )
 
+    def on_train_start(self):
+        self.start_time = time.time()
+
     def on_train_end(self):
-        execution_time = (time.time() - self.start_time) / 60
-        logging.info(f"The training took {execution_time} minutes")
+        if self.start_time is not None:
+            execution_time = (time.time() - self.start_time) / 60
+            logging.info(f"The training took {execution_time:.2f} minutes")
+        else:
+            logging.warning("Start time not set. Unable to calculate execution time.")
+
+    def on_test_start(self):
+        self.start_time = time.time()
+
+    def on_test_end(self):
+        if self.start_time is not None:
+            execution_time = (time.time() - self.start_time) / 60
+            logging.info(f"The testing took {execution_time:.2f} minutes")
+        else:
+            logging.warning("Start time not set. Unable to calculate execution time.")

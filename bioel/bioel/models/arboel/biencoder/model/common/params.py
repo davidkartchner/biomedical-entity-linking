@@ -166,9 +166,10 @@ class BlinkParser(argparse.ArgumentParser):
         )
         parser.add_argument(
             "--data_path",
-            default="data/zeshel",
+            default=None,
             type=str,
-            help="The path to the train data.",
+            required=True,
+            help="Path where to save all the data : (train, valid, test).json + dictionary.pickle + abbreviations file + tui2type_hierarchy file",
         )
         parser.add_argument(
             "--output_path",
@@ -566,9 +567,6 @@ class BlinkParser(argparse.ArgumentParser):
             help="Number of kNN entity candidates to fetch to calculate the model's recall accuracy",
         )
         parser.add_argument(
-            "--recall_k_list", nargs="+", type=int, help="List of k values for recall"
-        )
-        parser.add_argument(
             "--only_recall",
             action="store_true",
             help="Whether to run evaluation to only compute the recall metric for recall@{--recall_k}",
@@ -759,6 +757,13 @@ class BlinkParser(argparse.ArgumentParser):
             "--load_function",
             type=str,
             help="Function to load ontology, e.g., load_medic, load_mesh, load_umls",
+        )
+
+        parser.add_argument(
+            "--path_to_abbrev",
+            default=None,
+            type=str,
+            help="Path to abbreviation.json file",
         )
 
     def add_joint_train_args(self, args=None):

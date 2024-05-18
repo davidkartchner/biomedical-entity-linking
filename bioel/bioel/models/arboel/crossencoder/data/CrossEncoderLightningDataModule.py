@@ -231,7 +231,7 @@ def get_data_loader(
         batch_size=params[
             "train_batch_size" if data_split == "train" else "eval_batch_size"
         ],
-        drop_last=True,
+        drop_last=True if data_split == "train" else False,
     )
     if return_data:
         return (

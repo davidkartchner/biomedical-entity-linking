@@ -7,9 +7,32 @@ from bioel.models.arboel.biencoder.model.BiEncoderLightningModule import LitArbo
 from bioel.models.arboel.biencoder.data.BiEncoderLightningDataModule import (
     ArboelDataModule,
 )
+from bioel.ontology import BiomedicalOntology
+import pickle
+import os
 
 
 def main(args):
+
+    # Check if the function name provided is an actual function of BiomedicalOntology
+    if hasattr(BiomedicalOntology, args["load_function"]):
+        load_func = getattr(BiomedicalOntology, args["load_function"])
+
+        if args["ontology_dict"]:
+            ontology_object = load_func(**args["ontology_dict"])
+            print(f"Ontology loaded successfully. Name: {ontology_object.name}")
+        else:
+            raise ValueError("No ontology data provided.")
+    else:
+        raise ValueError(
+            f"Error: {args['load_function']} is not a valid function for BiomedicalOntology."
+        )
+
+    with open(
+        os.path.join(args["data_path"], f"{args['ontology']}_object.pickle"), "wb"
+    ) as f:
+        pickle.dump(ontology_object, f)
+
     data_module = ArboelDataModule(params=args)
 
     MyModel = LitArboel.load_from_checkpoint(
