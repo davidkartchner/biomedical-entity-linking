@@ -5,7 +5,7 @@ from collections import defaultdict
 import pandas as pd
 from datasets import load_dataset
 
-from dataset_consts import *
+from bioel.dataset_consts import *
 
 def load_bigbio_dataset(dataset_name):
     """

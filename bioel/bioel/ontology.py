@@ -36,6 +36,7 @@ class BiomedicalOntology:
     )  # Dict mapping CUI: BiomedicalEntity
     abbrev: Optional[str] = None  # Abbreviated name of ontology if different than name
     metadata: Optional[dict] = None
+    
 
     def get_canonical_name(self):
         """
@@ -285,7 +286,7 @@ class BiomedicalOntology:
         all_umls_df["has_definition"] = all_umls_df["def"].map(lambda x: x is not None)
         all_umls_df["num_aliases"] = all_umls_df["alias"].map(lambda x: len(x))
 
-        for index, row in all_umls_df.iterrows():
+        for index, row in tqdm(all_umls_df.iterrows(), desc = "Loading UMLS Ontology"):
             entity = BiomedicalEntity(
                 cui=row["cui"],
                 name=row["name"],
