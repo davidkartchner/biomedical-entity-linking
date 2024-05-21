@@ -15,6 +15,20 @@ import pickle
 
 
 def main(args):
+    import sys
+
+    print("sys.executable :", sys.executable)
+
+    import os
+
+    print('os.environ.get("PATH") :', os.environ.get("PATH"))
+
+    import torch
+
+    print(torch.cuda.is_available())
+    print(torch.cuda.device_count())
+    print(torch.cuda.get_device_name(0))
+
     os.environ["WANDB_SILENT"] = "true"
     print("Current seed:", args["seed"])
 
@@ -53,8 +67,12 @@ def main(args):
 
     wandb_logger = WandbLogger(project=args["experiment"])
 
+    print(f"Devices: {args['devices']}")
+    print(f"Accelerator: {'gpu' if args['devices'] else 'cpu'}")
+    print(f"Using PyTorch Lightning version: {L.__version__}")
+
     trainer = L.Trainer(
-        limit_val_batches=1,
+        limit_val_batches=1,  # arboel needs all data to build the graph with the most coreference. We limit the validation batch_suze to 1 because validation_batch_size = validation set already.
         max_epochs=args["num_train_epochs"],
         devices=args["devices"],
         accelerator="gpu" if args["devices"] else "cpu",

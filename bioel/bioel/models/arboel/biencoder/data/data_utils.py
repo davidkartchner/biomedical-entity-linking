@@ -94,7 +94,7 @@ def process_ontology(ontology: BiomedicalOntology, data_path: str):
     for cui, entity in tqdm(ontology.entities.items()):
         new_entity = {}
 
-        if ontology.name.lower() in ["umls", "mesh"]:
+        if ontology.name.lower() in ["umls"]:
             with open(os.path.join(data_path, "tui2type_hierarchy.json"), "r") as f:
                 type2geneology = ujson.load(f)
             entity.types = get_type_gcd(entity.types, type2geneology)

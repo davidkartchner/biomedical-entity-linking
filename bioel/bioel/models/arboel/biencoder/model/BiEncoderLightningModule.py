@@ -1657,6 +1657,7 @@ class LitArboel(L.LightningModule):
 
     def on_validation_epoch_end(self):
         self.log("max_acc", self.max_acc, on_epoch=True, sync_dist=True)
+        
         for key, value in self.dict_acc.items():
             self.log(f"dict_acc_{key}", value, on_epoch=True, sync_dist=True)
 

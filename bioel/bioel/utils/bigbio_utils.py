@@ -337,7 +337,7 @@ def resolve_abbreviation(doc_id, texts, abbreviations):
         List of resolved abbreviations if found, else original texts
     """
     resolved_texts = [abbreviations.get(doc_id, {}).get(text, text) for text in texts]
-    return " ".join(resolved_texts)
+    return "".join(resolved_texts)
 
 
 def load_dataset_df(name, path_to_abbrev=None):

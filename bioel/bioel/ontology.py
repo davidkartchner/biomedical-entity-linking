@@ -45,13 +45,6 @@ class BiomedicalOntology:
         canonical_names = {cui: entity.name for cui, entity in self.entities.items()}
         return canonical_names
 
-    def get_canonical_name(self):
-        """
-        Get name of entities in the ontology
-        """
-        canonical_names = {cui: entity.name for cui, entity in self.entities.items()}
-        return canonical_names
-
     def get_aliases(self):
         """
         Get aliases of entities in the ontology
@@ -364,8 +357,8 @@ class BiomedicalOntology:
         )
         i = 0
         for cui, _name in tqdm(mesh_to_name.items()):
-            ent_type = mesh_to_types[cui]
-            # ent_type = mesh_to_groups[cui][0]
+            # ent_type = mesh_to_types[cui]
+            ent_type = mesh_to_groups[cui][0]
             # if i < 1:
             #     print(f"{mesh_to_groups[cui][0]=}")
             #     print(f"{mesh_to_types[cui]=}")

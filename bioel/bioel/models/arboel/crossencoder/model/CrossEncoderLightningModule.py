@@ -106,7 +106,7 @@ def evaluate_single_batch(
     logger,
     context_length,
     params,
-    output_eval,
+    output_eval=None,
     recall_k=None,
     mention_data=None,
     compute_macro_avg=False,
@@ -139,18 +139,6 @@ def evaluate_single_batch(
     )
     eval_accuracy = np.sum(tmp_eval_hits)
 
-    # Needed for the output for evaluation
-    data = load_bigbio_dataset(params["dataset"])
-    if params["path_to_abbrev"]:
-        data_with_abbrev = add_deabbreviations(
-            dataset=data, path_to_abbrev=params["path_to_abbrev"]
-        )
-    exclude = CUIS_TO_EXCLUDE[params["dataset"]]
-    remap = CUIS_TO_REMAP[params["dataset"]]
-    df = dataset_to_df(
-        data_with_abbrev, entity_remapping_dict=remap, cuis_to_exclude=exclude
-    )
-
     nb_eval_examples = context_input.size(0)
 
     if compute_macro_avg:
@@ -161,6 +149,19 @@ def evaluate_single_batch(
             n_hits_per_type[mention_type] += is_hit
 
     if store_failure_success:
+
+        # Needed for the output for evaluation
+        data = load_bigbio_dataset(params["dataset"])
+        if params["path_to_abbrev"]:
+            data_with_abbrev = add_deabbreviations(
+                dataset=data, path_to_abbrev=params["path_to_abbrev"]
+            )
+        exclude = CUIS_TO_EXCLUDE[params["dataset"]]
+        remap = CUIS_TO_REMAP[params["dataset"]]
+        df = dataset_to_df(
+            data_with_abbrev, entity_remapping_dict=remap, cuis_to_exclude=exclude
+        )
+
         recall_tmp_eval_hits, recall_predicted = recall(
             out=logits, labels=label_ids, k=recall_k, return_bool_arr=True
         )
@@ -250,7 +251,6 @@ class LitCrossEncoder(L.LightningModule):
         self.save_hyperparameters(params)
         self.reranker = CrossEncoderRanker(params)
         self.model = self.reranker.model
-        self.val_results = {}
 
     def training_step(self, batch, batch_idx):
         context_input, label_input, _ = batch
@@ -301,6 +301,7 @@ class LitCrossEncoder(L.LightningModule):
             batch=batch,
             logger=logger,
             context_length=self.hparams["max_context_length"],
+            params=self.hparams,
         )
 
         self.log(
