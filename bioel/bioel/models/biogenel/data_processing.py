@@ -3,7 +3,7 @@ import ujson
 import warnings
 from collections import defaultdict
 import pandas as pd
-#from bigbio.dataloader import BigBioConfigHelpers
+
 import json
 import joblib
 import numpy as np
@@ -69,6 +69,7 @@ def create_tfidf_ann_index(
     """
     tfidf_vectorizer_path = f"{out_path}/tfidf_vectorizer.joblib"
     concept_aliases = []
+    os.makedirs(out_path, exist_ok=True)
 
     # Open the text file for reading
     with open(input_path_kb, "r") as file:
@@ -190,6 +191,7 @@ def contextualize_mentions(
 
 def create_training_files(
     save_dir: str,
+    dataset_name: str,
     document_dict: dict,
     deduplicated,
     abbreviations_dict: dict,
@@ -212,12 +214,21 @@ def create_training_files(
     # )
 
     # Get closest synonym for each mention
-    tfidf_vectorizer = "file_dumps/tfidf_vectorizer.joblib"
+    tfidf_vectorizer = f"file_dumps/{dataset_name}/tfidf_vectorizer.joblib"
     vectorizer = joblib.load(tfidf_vectorizer)
 
-    df["entity_aliases"] = df["db_ids"].map(
-        lambda x: list(set([z for y in x for z in cui2alias[y]]))
-    )
+    # df["entity_aliases"] = df["db_ids"].map(
+    #     lambda x: list(set([z for y in x for z in cui2alias[y]]))
+    # )
+    def get_aliases(db_ids):
+        aliases = []
+        for db_id in db_ids:
+            if db_id in cui2alias:
+                aliases.extend(cui2alias[db_id])
+        return list(set(aliases))
+
+    df["entity_aliases"] = df["db_ids"].map(get_aliases)
+
     # print(df[df.entity_aliases.map(lambda x: len(x)==0)])
     print("Getting most similar alias")
     df["most_similar_alias"] = df[["mention", "entity_aliases"]].progress_apply(
@@ -231,7 +242,7 @@ def create_training_files(
     df["source_json"] = df["contextualized_mention"].map(lambda x: ujson.dumps([x]))
 
     df["target_json"] = df[["mention", "most_similar_alias"]].progress_apply(
-        lambda x: ujson.dumps([f"{x[0]} is", x[1]]), axis=1
+        lambda x: ujson.dumps([f"{x[0]} is", x[1] if x[1] is not None else "unknown"]), axis=1
     )
 
     # Store/check results
@@ -261,8 +272,11 @@ def create_training_files(
 
 def get_most_similar_alias(mention, cui_alias_list, vectorizer):
     """
-    Get most similar CUI alias to current mention using TF-IDF
+    Get most similar CUI alias to current mention using TF-IDF.
+    Returns None if cui_alias_list is empty.
     """
+    if not cui_alias_list:
+        return None
     most_similar_idx = cal_similarity_tfidf(cui_alias_list, mention, vectorizer)[0]
     return cui_alias_list[most_similar_idx]
 
@@ -305,7 +319,7 @@ def data_preprocess(dataset_name: str, save_dir: str, ontology: BiomedicalOntolo
     save_dir = os.path.join(save_dir, f"{dataset_name}/")
 
     mappings_dir = cuis_to_aliases(ontology, save_dir, dataset_name)
-    create_tfidf_ann_index("file_dumps/", mappings_dir)
+    create_tfidf_ann_index(f"file_dumps/{dataset_name}", mappings_dir)
 
     # read data
     dataset = load_dataset(f"bigbio/{dataset_name}", name=f"{dataset_name}_bigbio_kb")
@@ -316,8 +330,12 @@ def data_preprocess(dataset_name: str, save_dir: str, ontology: BiomedicalOntolo
         str_target = ujson.dumps(target_kb_dict, indent=2)
         target_kb.write(str_target)
 
-    with open("abbreviations.json") as json_file:
-        abbreviations_dict = ujson.load(json_file)
+    if resolve_abbrevs:
+        with open("abbreviations.json") as json_file:
+            abbreviations_dict = ujson.load(json_file)
+    else:
+        abbreviations_dict = None
+    
     entity_remapping_dict = CUIS_TO_REMAP[dataset_name]
     entities_to_exclude = CUIS_TO_EXCLUDE[dataset_name]
 
@@ -333,6 +351,7 @@ def data_preprocess(dataset_name: str, save_dir: str, ontology: BiomedicalOntolo
     # create source file
     create_training_files(
         save_dir,
+        dataset_name=dataset_name,
         document_dict=split_docs,
         deduplicated=deduplicated,
         abbreviations_dict=abbreviations_dict,
@@ -341,13 +360,3 @@ def data_preprocess(dataset_name: str, save_dir: str, ontology: BiomedicalOntolo
     )
 
     return save_dir
-
-'''
-if __name__ == "__main__":
-    data_preprocess(
-        dataset_name = "bc5cdr", 
-        save_dir = "data2/", 
-        ontology_dir = "Y:/mitchell/entity-linking/2017AA/META/", 
-        ontology_name = "mesh", 
-        resolve_abbrevs=False)
-'''
