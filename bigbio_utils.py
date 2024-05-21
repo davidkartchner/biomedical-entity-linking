@@ -3,12 +3,76 @@ import os
 import ujson
 from collections import defaultdict
 import pandas as pd
-from bigbio.dataloader import BigBioConfigHelpers
+from datasets import load_dataset
 
-from dataset_consts import *
+from bioel.utils.dataset_consts import *
+
+from datasets import load_dataset
 
 
-conhelps = BigBioConfigHelpers()
+def load_bigbio_dataset(dataset_name):
+    """
+    Load BigBio dataset and include abbreviations if specified.
+
+    Params
+    ------
+    - dataset_name : str
+        Name of the dataset to load
+    """
+    # Load the dataset
+    if dataset_name in {"medmentions_st21pv", "medmentions_full"}:
+        dataset = load_dataset(
+            f"bigbio/medmentions",
+            name=f"{dataset_name}_bigbio_kb",
+            trust_remote_code=True,
+        )
+    else:
+        dataset = load_dataset(
+            f"bigbio/{dataset_name}",
+            name=f"{dataset_name}_bigbio_kb",
+            trust_remote_code=True,
+        )
+
+    return dataset
+
+
+def add_deabbreviations(dataset, path_to_abbrev):
+    """
+    Function to add deabbreviated mentions to the entities in the dataset
+
+    Params
+    ------
+    - dataset : DatasetDict
+        The dataset to which deabbreviations need to be added
+    - path_to_abbrev : str
+        Path to the JSON file containing abbreviations
+    """
+
+    if not os.path.exists(path_to_abbrev):
+        raise FileNotFoundError(
+            f"The file {path_to_abbrev} does not exist. \nCreate the abbreviations.json file first using create_abbrev function from solve_abbreviations.py"
+        )
+
+    with open(path_to_abbrev, "r") as f:
+        abbreviations = ujson.load(f)
+
+    for split in dataset.keys():
+        dataset[split] = dataset[split].map(
+            lambda example: {
+                "entities": [
+                    {
+                        **entity,
+                        "deabbreviated_text": resolve_abbreviation(
+                            example["document_id"], entity["text"], abbreviations
+                        ),
+                    }
+                    for entity in example["entities"]
+                ]
+            },
+            batched=False,
+        )
+
+    return dataset
 
 
 def cache_deduplicated_dataset(deduplicated_df):
@@ -50,9 +114,7 @@ def get_dataset_documents(dataset_name):
     """
     Get the documents from a BigBio dataset
     """
-    data = conhelps.for_config_name(f"{dataset_name}_bigbio_kb").load_dataset(
-        from_hub=False
-    )
+    dataset = load_bigbio_dataset(dataset_name)
     return dataset_to_documents(dataset)
 
 
@@ -65,9 +127,7 @@ def make_mention_id(document_id, running_mention_count):
 
 
 # def get_dataset_df(dataset_name, abbrev_dict: dict = None):
-#     data = conhelps.for_config_name(f"{dataset_name}_bigbio_kb").load_dataset(
-#         from_hub=False
-#     )
+#     data = load_bigbio_dataset(dataset_name)
 
 #     data_df = dataset_to_df(
 #         data,
@@ -87,6 +147,16 @@ def make_mention_id(document_id, running_mention_count):
 #         )
 
 #     return data_df
+
+
+# Function to match text with abbreviations for each entity
+def match_abbreviation(entity, doc_id, abbrev_dict):
+    doc_abbrevs = abbrev_dict.get(str(doc_id), {})
+    for text in entity["text"]:
+        for abbr, full_form in doc_abbrevs.items():
+            if full_form == text:
+                return abbr
+    return None
 
 
 def dataset_to_df(
@@ -119,6 +189,7 @@ def dataset_to_df(
         "db_ids",  # list
         "split",  # string
         # "abbreviation_resolved", # bool
+        "deabbreviated_text",  # string
     ]
     all_lines = []
 
@@ -142,6 +213,9 @@ def dataset_to_df(
                 db_ids = [
                     x["db_name"] + ":" + x["db_id"].strip() for x in e["normalized"]
                 ]
+
+                # Get the abbreviation if it exists, else set to None or an empty string
+                deabbreviated_text = e.get("deabbreviated_text", None)
 
                 # Remap entity IDs when identifier has changed in database
                 if entity_remapping_dict is not None:
@@ -172,6 +246,7 @@ def dataset_to_df(
                         new_db_ids,
                         split,
                         # abbreviation_resolved,
+                        deabbreviated_text,
                     ]
                 )
 
@@ -185,6 +260,7 @@ def dataset_to_df(
                 "type": lambda x: list(set([a for a in x])),
                 "db_ids": lambda db_ids: list(set([y for x in db_ids for y in x])),
                 "split": "first",
+                "deabbreviated_text": "first",
             }
         )
         .reset_index()
@@ -215,9 +291,9 @@ def dataset_to_df(
     # Split off validation set if not given
     if val_split_ids is not None:
         print(type(val_split_ids[0]), type(deduplicated["document_id"][0]))
-        deduplicated.loc[
-            deduplicated["document_id"].isin(val_split_ids), "split"
-        ] = "validation"
+        deduplicated.loc[deduplicated["document_id"].isin(val_split_ids), "split"] = (
+            "validation"
+        )
 
     return deduplicated
 
@@ -242,32 +318,43 @@ def get_right_context(doc, end, max_length=64, strip=False):
         return " ".join(doc[end:].split()[:max_length])
 
 
-def resolve_abbreviation(document_id, text, abbreviations_dict):
+def resolve_abbreviation(doc_id, texts, abbreviations):
     """
-    Return un-abbreviated form of entity name if it was found in abbreviations_dict, else return original text
+    Resolve abbreviations for a given document and list of texts using the abbreviations dictionary.
 
-    Inputs:
-    -------------------------------
-        document_id: str
-            ID of document where mention was found
+    Params
+    ------
+    - doc_id : str
+        Document ID to look up in abbreviations
+    - texts : list of str
+        List of texts to resolve abbreviations for
+    - abbreviations : dict
+        Dictionary containing abbreviation mappings
 
-        text: str
-            Text of mention
-
-        abbreviations_dict: dict
-            Dict of form {document_id:{text: unabbreviated_text}} containing abbreviations detected in each document
+    Returns
+    -------
+    - list of str
+        List of resolved abbreviations if found, else original texts
     """
-    if text in abbreviations_dict[document_id]:
-        return abbreviations_dict[document_id][text]
-    else:
-        return text
+    resolved_texts = [abbreviations.get(doc_id, {}).get(text, text) for text in texts]
+    return "".join(resolved_texts)
 
 
-def load_dataset_df(name, add_unabbreviated_forms=False):
+def load_dataset_df(name, path_to_abbrev=None):
     """
     Load bigbio dataset and turn into pandas dataframe
+
+    Params
+    ------
+    - name : str
+        Name of the dataset to load
+    - path_to_abbrev : str
+        Path to the JSON file containing abbreviations
     """
-    data = conhelps.for_config_name(f"{name}_bigbio_kb").load_dataset(from_hub=False)
+    data = load_bigbio_dataset(dataset_name=name)
+
+    if path_to_abbrev:
+        data = add_deabbreviations(dataset=data, path_to_abbrev=path_to_abbrev)
 
     if name in CUIS_TO_EXCLUDE:
         exclude = CUIS_TO_EXCLUDE[name]
@@ -290,19 +377,6 @@ def load_dataset_df(name, add_unabbreviated_forms=False):
         cuis_to_exclude=exclude,
         val_split_ids=validation_pmids,
     )
-
-    if add_unabbreviated_forms:
-        dir_path = os.path.dirname(os.path.abspath(__file__))
-        abbrev_dict = ujson.load(open("../data/abbreviations.json"))
-
-        df["deabbreviated_text"] = df[["document_id", "text"]].apply(
-            lambda x: resolve_abbreviation(
-                document_id=x[0],
-                text=x[1],
-                abbreviations_dict=abbrev_dict,
-            ),
-            axis=1,
-        )
 
     return df
 
@@ -339,7 +413,7 @@ def metamap_text_to_candidates(metamap_output):
     return text2candidates
 
 
-if __name__ == "__main__":
-    dataset_name = "bc5cdr"
-    dataset = conhelps.for_config_name(f"{dataset_name}_bigbio_kb").load_dataset()
-    print(dataset_to_documents(dataset))
+# if __name__ == "__main__":
+#     dataset_name = "bc5cdr"
+#     dataset = load_bigbio_dataset(dataset_name)
+#     print(dataset_to_documents(dataset))
