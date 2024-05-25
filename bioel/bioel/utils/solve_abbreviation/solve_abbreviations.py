@@ -84,5 +84,5 @@ if __name__ == "__main__":
         "nlmchem",
         "nlm_gene",
     ]
-    output_dir = "/home2/cye73/data_test2"
+    output_dir = "/home/pbathala3/entity_linking/"
     create_abbrev(output_dir, all_dataset)
