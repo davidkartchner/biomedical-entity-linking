@@ -38,6 +38,7 @@ setup(
         "logger" "lightning",
         "ipython",
         "cython",
+        "transformers",
         "pytorch_transformers",
         "scipy",
         "faiss-gpu",
