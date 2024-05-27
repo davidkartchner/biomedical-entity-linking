@@ -60,59 +60,6 @@ def convert_defaultdict(d):
     return d
 
 
-# def merge_dicts(dict1, dict2):
-#     """Merge two dictionaries with support for nested structures and summing numeric values"""
-#     merged_dict = dict1.copy()
-#     for key, value in dict2.items():
-#         if key in merged_dict:
-#             if isinstance(value, collections.defaultdict) and isinstance(
-#                 merged_dict[key], collections.defaultdict
-#             ):
-#                 for k, v in value.items():
-#                     merged_dict[key][k] = merged_dict[key].get(k, 0) + v
-#             elif isinstance(value, (int, float)) and isinstance(
-#                 merged_dict[key], (int, float)
-#             ):
-#                 merged_dict[key] += value
-#             else:
-#                 if isinstance(value, list) and isinstance(merged_dict[key], list):
-#                     merged_dict[key].extend(value)
-#                 else:
-#                     merged_dict[key] = value
-#         else:
-#             merged_dict[key] = copy.deepcopy(value)
-
-#     return merged_dict
-
-
-# def merge_dicts(dict1, dict2):
-#     """Merge two dictionaries with support for nested structures and summing numeric values"""
-#     merged_dict = copy.deepcopy(dict1)
-#     for key, value in dict2.items():
-#         if key in merged_dict:
-#             if isinstance(value, collections.defaultdict) and isinstance(
-#                 merged_dict[key], collections.defaultdict
-#             ):
-#                 for sub_key, sub_value in value.items():
-#                     merged_dict[key][sub_key] = (
-#                         merged_dict[key].get(sub_key, 0) + sub_value
-#                     )
-#             elif isinstance(value, dict) and isinstance(merged_dict[key], dict):
-#                 merged_dict[key] = merge_dicts(merged_dict[key], value)
-#             elif isinstance(value, (int, float)) and isinstance(
-#                 merged_dict[key], (int, float)
-#             ):
-#                 merged_dict[key] += value
-#             else:
-#                 if isinstance(value, list) and isinstance(merged_dict[key], list):
-#                     merged_dict[key].extend(value)
-#                 else:
-#                     merged_dict[key] = copy.deepcopy(value)
-#         else:
-#             merged_dict[key] = copy.deepcopy(value)
-#     return merged_dict
-
-
 def merge_dicts(dict1, dict2, non_summing_keys=None):
     """Merge two dictionaries with support for nested structures and summing numeric values"""
     if non_summing_keys is None:
@@ -176,7 +123,7 @@ def evaluate_single_batch(
     compute_macro_avg=False,
     store_failure_success=False,
 ):
-    '''
+    """
     Evaluate the performance of the crossencoder on a single batch of data.
     Parameters:
     - reranker: CrossEncoderRanker object
@@ -196,7 +143,7 @@ def evaluate_single_batch(
         Whether to compute the macro average accuracy (=Accuracy over each mention type).
     - store_failure_success: bool
         Whether to store the failure and success cases for analysis
-    '''
+    """
     context_input, label_input, mention_idxs = batch
     results = {}
     eval_accuracy = 0

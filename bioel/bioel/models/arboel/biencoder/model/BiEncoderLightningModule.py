@@ -1333,10 +1333,6 @@ class LitArboel(L.LightningModule):
         return [optimizer], [{"scheduler": scheduler, "interval": "step"}]
 
     def on_train_epoch_start(self):
-        print(
-            "world size :",
-            self.trainer.world_size,
-        )
 
         logger.info("On train epoch start")
         "IV.1) Compute mention and entity embeddings and indexes at the start of each epoch"
@@ -1365,7 +1361,6 @@ class LitArboel(L.LightningModule):
                 force_exact_search=self.hparams["force_exact_search"],
                 batch_size=self.hparams["embed_batch_size"],
                 probe_mult_factor=self.hparams["probe_mult_factor"],
-                world_size=self.trainer.world_size,
             )
             (
                 self.train_men_embeds,
@@ -1379,7 +1374,6 @@ class LitArboel(L.LightningModule):
                 force_exact_search=self.hparams["force_exact_search"],
                 batch_size=self.hparams["embed_batch_size"],
                 probe_mult_factor=self.hparams["probe_mult_factor"],
-                world_size=self.trainer.world_size,
             )
 
         else:  # general indexes
@@ -1391,7 +1385,6 @@ class LitArboel(L.LightningModule):
                     force_exact_search=self.hparams["force_exact_search"],
                     batch_size=self.hparams["embed_batch_size"],
                     probe_mult_factor=self.hparams["probe_mult_factor"],
-                    world_size=self.trainer.world_size,
                 )
             )
             self.train_men_embeds, self.train_men_index = data_process.embed_and_index(
@@ -1401,7 +1394,6 @@ class LitArboel(L.LightningModule):
                 force_exact_search=self.hparams["force_exact_search"],
                 batch_size=self.hparams["embed_batch_size"],
                 probe_mult_factor=self.hparams["probe_mult_factor"],
-                world_size=self.trainer.world_size,
             )
 
         # Number of entities
@@ -1507,7 +1499,6 @@ class LitArboel(L.LightningModule):
                 force_exact_search=self.hparams["force_exact_search"],
                 batch_size=self.hparams["embed_batch_size"],
                 probe_mult_factor=self.hparams["probe_mult_factor"],
-                world_size=self.trainer.world_size,
             )
             logger.info(
                 "VALIDATION. Queries: Embedding and building index"
@@ -1524,7 +1515,6 @@ class LitArboel(L.LightningModule):
                 force_exact_search=self.hparams["force_exact_search"],
                 batch_size=self.hparams["embed_batch_size"],
                 probe_mult_factor=self.hparams["probe_mult_factor"],
-                world_size=self.trainer.world_size,
             )
         else:  # corpus = None
             """
@@ -1541,7 +1531,6 @@ class LitArboel(L.LightningModule):
                     force_exact_search=self.hparams["force_exact_search"],
                     batch_size=self.hparams["embed_batch_size"],
                     probe_mult_factor=self.hparams["probe_mult_factor"],
-                    world_size=self.trainer.world_size,
                 )
             )
             logger.info("VALIDATION. Queries: Embedding and building index")
@@ -1552,7 +1541,6 @@ class LitArboel(L.LightningModule):
                 force_exact_search=self.hparams["force_exact_search"],
                 batch_size=self.hparams["embed_batch_size"],
                 probe_mult_factor=self.hparams["probe_mult_factor"],
-                world_size=self.trainer.world_size,
             )
 
             # Construct the full file path
