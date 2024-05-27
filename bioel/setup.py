@@ -14,7 +14,14 @@ setup(
     url="",
     author="Pathology Dynamics Lab, Georgia Institute of Technology",
     author_email="",
-    keywords=["bioel", "biomedical", "entity", "linking", "entity-linking", "biomedical-entity-linking"],
+    keywords=[
+        "bioel",
+        "biomedical",
+        "entity",
+        "linking",
+        "entity-linking",
+        "biomedical-entity-linking",
+    ],
     packages=find_packages(),
     python_requires=">= 3.9",
     install_requires=[
@@ -28,5 +35,16 @@ setup(
         "datasets",
         "ujson",
         "bioc",
-    ]
+        "logger" "lightning",
+        "ipython",
+        "cython",
+        "transformers",
+        "pytorch_transformers",
+        "scipy",
+        "faiss-gpu",
+        "faiss-cpu",
+        "wandb",
+        "scikit-learn",
+        "torch", 
+    ],
 )

@@ -6,6 +6,9 @@ import pandas as pd
 from datasets import load_dataset
 
 from bioel.utils.dataset_consts import *
+from bioel.logger import setup_logger
+
+logger = setup_logger()
 
 
 def load_bigbio_dataset(dataset_name):
@@ -335,7 +338,7 @@ def resolve_abbreviation(doc_id, texts, abbreviations):
         List of resolved abbreviations if found, else original texts
     """
     resolved_texts = [abbreviations.get(doc_id, {}).get(text, text) for text in texts]
-    return " ".join(resolved_texts)
+    return "".join(resolved_texts)
 
 
 def load_dataset_df(name, path_to_abbrev=None):
@@ -409,6 +412,31 @@ def metamap_text_to_candidates(metamap_output):
 
         text2candidates[text] = candidates
     return text2candidates
+
+
+def dataset_unique_gene_ids(dataset: str):
+    """
+    dataset: str
+        Name of the dataset to load
+    """
+    data = load_bigbio_dataset(dataset_name=dataset)
+    exclude = CUIS_TO_EXCLUDE[dataset]
+    remap = CUIS_TO_REMAP[dataset]
+
+    df = dataset_to_df(data, entity_remapping_dict=remap, cuis_to_exclude=exclude)
+
+    # Flatten the db_ids lists into a single list
+    all_db_ids = [db_id for sublist in df["db_ids"] for db_id in sublist]
+
+    # Count the number of unique db_ids
+    unique_db_ids = set(all_db_ids)
+
+    logger.info(f"Number of unique db_ids in {dataset} : {len(unique_db_ids)}")
+    unique_gene_ids = [
+        int(gene_id.replace("NCBIGene:", "")) for gene_id in unique_db_ids
+    ]
+
+    return unique_gene_ids
 
 
 if __name__ == "__main__":

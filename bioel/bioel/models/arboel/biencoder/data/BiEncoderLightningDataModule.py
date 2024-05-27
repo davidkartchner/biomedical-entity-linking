@@ -160,6 +160,7 @@ class ArboelDataModule(L.LightningDataModule):
                 dataset=self.hparams["dataset"],
                 data_path=self.data_path,
                 path_to_abbrev=self.hparams["path_to_abbrev"],
+                tax2name_filepath=self.hparams["tax2name_filepath"],
             )
 
     def setup(self, stage=None):

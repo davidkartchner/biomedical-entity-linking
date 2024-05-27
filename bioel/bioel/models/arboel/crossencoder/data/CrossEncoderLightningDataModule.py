@@ -199,7 +199,7 @@ def get_data_loader(
                 gold_idx = processed_data[i]["label_idxs"][0]
                 stored_data["labels"][i] = len(stored_data["candidates"][i]) - 1
                 stored_data["candidates"][i][-1] = gold_idx
-            else:
+            else:  # skip the mention
                 keep_mask[i] = False
                 continue
         cands = list(map(lambda x: dict_vecs[x], stored_data["candidates"][i]))
