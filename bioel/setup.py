@@ -28,5 +28,8 @@ setup(
         "datasets",
         "ujson",
         "bioc",
+        "torch",
+        "transformers",
+        "faiss-gpu"
     ]
 )
