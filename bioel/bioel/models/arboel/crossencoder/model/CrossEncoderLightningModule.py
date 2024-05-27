@@ -60,16 +60,81 @@ def convert_defaultdict(d):
     return d
 
 
-def merge_dicts(dict1, dict2):
+# def merge_dicts(dict1, dict2):
+#     """Merge two dictionaries with support for nested structures and summing numeric values"""
+#     merged_dict = dict1.copy()
+#     for key, value in dict2.items():
+#         if key in merged_dict:
+#             if isinstance(value, collections.defaultdict) and isinstance(
+#                 merged_dict[key], collections.defaultdict
+#             ):
+#                 for k, v in value.items():
+#                     merged_dict[key][k] = merged_dict[key].get(k, 0) + v
+#             elif isinstance(value, (int, float)) and isinstance(
+#                 merged_dict[key], (int, float)
+#             ):
+#                 merged_dict[key] += value
+#             else:
+#                 if isinstance(value, list) and isinstance(merged_dict[key], list):
+#                     merged_dict[key].extend(value)
+#                 else:
+#                     merged_dict[key] = value
+#         else:
+#             merged_dict[key] = copy.deepcopy(value)
+
+#     return merged_dict
+
+
+# def merge_dicts(dict1, dict2):
+#     """Merge two dictionaries with support for nested structures and summing numeric values"""
+#     merged_dict = copy.deepcopy(dict1)
+#     for key, value in dict2.items():
+#         if key in merged_dict:
+#             if isinstance(value, collections.defaultdict) and isinstance(
+#                 merged_dict[key], collections.defaultdict
+#             ):
+#                 for sub_key, sub_value in value.items():
+#                     merged_dict[key][sub_key] = (
+#                         merged_dict[key].get(sub_key, 0) + sub_value
+#                     )
+#             elif isinstance(value, dict) and isinstance(merged_dict[key], dict):
+#                 merged_dict[key] = merge_dicts(merged_dict[key], value)
+#             elif isinstance(value, (int, float)) and isinstance(
+#                 merged_dict[key], (int, float)
+#             ):
+#                 merged_dict[key] += value
+#             else:
+#                 if isinstance(value, list) and isinstance(merged_dict[key], list):
+#                     merged_dict[key].extend(value)
+#                 else:
+#                     merged_dict[key] = copy.deepcopy(value)
+#         else:
+#             merged_dict[key] = copy.deepcopy(value)
+#     return merged_dict
+
+
+def merge_dicts(dict1, dict2, non_summing_keys=None):
     """Merge two dictionaries with support for nested structures and summing numeric values"""
-    merged_dict = dict1.copy()
+    if non_summing_keys is None:
+        non_summing_keys = set()
+
+    merged_dict = copy.deepcopy(dict1)
     for key, value in dict2.items():
         if key in merged_dict:
-            if isinstance(value, collections.defaultdict) and isinstance(
+            if key in non_summing_keys:
+                # Replace value for keys that should not be summed
+                merged_dict[key] = copy.deepcopy(value)
+            elif isinstance(value, collections.defaultdict) and isinstance(
                 merged_dict[key], collections.defaultdict
             ):
-                for k, v in value.items():
-                    merged_dict[key][k] = merged_dict[key].get(k, 0) + v
+                for sub_key, sub_value in value.items():
+                    merged_dict[key][sub_key] = (
+                        merged_dict[key].get(sub_key, 0) + sub_value
+                    )
+            elif isinstance(value, dict) and isinstance(merged_dict[key], dict):
+                merged_dict[key] = merge_dicts(
+                    merged_dict[key], value, non_summing_keys
+                )
             elif isinstance(value, (int, float)) and isinstance(
                 merged_dict[key], (int, float)
             ):
@@ -78,10 +143,9 @@ def merge_dicts(dict1, dict2):
                 if isinstance(value, list) and isinstance(merged_dict[key], list):
                     merged_dict[key].extend(value)
                 else:
-                    merged_dict[key] = value
+                    merged_dict[key] = copy.deepcopy(value)
         else:
             merged_dict[key] = copy.deepcopy(value)
-
     return merged_dict
 
 
@@ -112,6 +176,27 @@ def evaluate_single_batch(
     compute_macro_avg=False,
     store_failure_success=False,
 ):
+    '''
+    Evaluate the performance of the crossencoder on a single batch of data.
+    Parameters:
+    - reranker: CrossEncoderRanker object
+    - batch: tuple of torch tensors
+    - logger: logger object
+    - context_length: int
+        Maximum context length for the crossencoder
+    - params : dict
+        Contains most of the relevant keys for training (embed_batch_size, batch_size, n_gpu, etc...)
+    - output_eval: list (used for testing, not validation)
+        List to store the output of the evaluation
+    - recall_k: int
+        Number of candidates to consider for recall
+    - mention_data: (Optional) torch tensor
+        Contains the test mention data (used for testing)
+    - compute_macro_avg: bool
+        Whether to compute the macro average accuracy (=Accuracy over each mention type).
+    - store_failure_success: bool
+        Whether to store the failure and success cases for analysis
+    '''
     context_input, label_input, mention_idxs = batch
     results = {}
     eval_accuracy = 0
@@ -318,19 +403,27 @@ class LitCrossEncoder(L.LightningModule):
         self.output_eval = []
 
         self.test_results = {
+            # Accuracy computed when we only considered mentions with the correct cui in top candidates
             "normalized_accuracy": 0,
-            "unnormalized_accuracy": 0,
+            # Average accuracy across all types (Only mentions with the correct cui in top candidates).
             "normalized_macro_avg_acc": 0,
-            "unnormalized_macro_avg_acc": 0,
+            # Number of samples with the correct cui in top candidates in the test set
             "filtered_length": int(
                 len(self.trainer.datamodule.test_data["mention_data"])
                 - self.trainer.datamodule.nb_no_label_test
             ),
+            # Number of samples with and without the correct cui in top candidates in the test set
             "unfiltered_length": len(self.trainer.datamodule.test_data["mention_data"]),
-            "n_mentions_per_type": collections.defaultdict(int),
             "n_hits_per_type": collections.defaultdict(int),
             "n_evaluated_per_type": collections.defaultdict(int),
         }
+
+        if self.trainer.limit_test_batches == 1.0:
+            # Accuracy computed when we included mentions without the correct cui in top candidates
+            self.test_results["unnormalized_accuracy"] = 0
+            # Average accuracy across all types (Including mentions without the correct cui in top candidates)
+            self.test_results["unnormalized_macro_avg_acc"] = 0
+            self.test_results["n_mentions_per_type"] = collections.defaultdict(int)
 
     def test_step(self, batch, batch_idx):
 
@@ -349,17 +442,10 @@ class LitCrossEncoder(L.LightningModule):
         self.test_results = merge_dicts(self.test_results, results)
 
     def on_test_epoch_end(self):
-
         self.test_results["normalized_accuracy"] = float(
             self.test_results["correct_pred"]
             / self.test_results["nb_samples_evaluated"]
             * 100
-        )
-
-        self.test_results["unnormalized_accuracy"] = float(
-            self.test_results["normalized_accuracy"]
-            * self.test_results["filtered_length"]
-            / self.test_results["unfiltered_length"]
         )
 
         for mention_type in self.test_results["n_evaluated_per_type"]:
@@ -377,83 +463,73 @@ class LitCrossEncoder(L.LightningModule):
         )
 
         self.log(
-            "Number of samples evaluated in this test",
-            self.test_results["nb_samples_evaluated"],
-            sync_dist=True,
-        )
-
-        self.log(
             "Normalized Accuracy : Only considered mentions with the correct cui in top candidates",
             self.test_results["normalized_accuracy"],
             sync_dist=True,
         )
 
-        self.log(
-            "Number of samples with the correct cui in top candidates in the test set",
-            self.test_results["filtered_length"],
-            sync_dist=True,
-        )
-        self.log(
-            "Number of samples with and without the correct cui in top candidatesin the test set",
-            self.test_results["unfiltered_length"],
-            sync_dist=True,
-        )
+        if self.trainer.limit_test_batches == 1.0:
 
-        self.log(
-            "Unnormalized Accuracy : Include mentions without the correct cui in top candidates",
-            self.test_results["unnormalized_accuracy"],
-            sync_dist=True,
-        )
-        self.log(
-            "Normalized macro_avg_acc : Average accuracy across all types (Only mentions with the correct cui in top candidates).",
-            self.test_results["normalized_macro_avg_acc"],
-            sync_dist=True,
-        )
-
-        if (
-            self.test_results["filtered_length"]
-            - self.test_results["filtered_length"]
-            % self.hparams["eval_batch_size"]  # remove last batch
-            == self.test_results["nb_samples_evaluated"]
-        ):
-            for men in self.trainer.datamodule.test_data["mention_data"]:
-                self.test_results["n_mentions_per_type"][men["type"]] += 1
-
-            for mention_type in self.test_results["n_mentions_per_type"]:
-                self.test_results["unnormalized_macro_avg_acc"] += float(
-                    self.test_results["n_hits_per_type"][mention_type]
-                    / self.test_results["n_mentions_per_type"][mention_type]
-                    if self.test_results["n_mentions_per_type"][mention_type] > 0
-                    else 0
-                )
-
-            self.test_results["unnormalized_macro_avg_acc"] = (
-                self.test_results["unnormalized_macro_avg_acc"]
-                / len(self.test_results["n_mentions_per_type"])
-                * 100
+            self.test_results["unnormalized_accuracy"] = float(
+                self.test_results["normalized_accuracy"]
+                * self.test_results["filtered_length"]
+                / self.test_results["unfiltered_length"]
             )
+
             self.log(
-                "Unnormalized macro_avg_acc : Average accuracy across all types (Including mentions without the correct cui in top candidates)",
-                self.test_results["unnormalized_macro_avg_acc"],
+                "Unnormalized Accuracy : Include mentions without the correct cui in top candidates",
+                self.test_results["unnormalized_accuracy"],
                 sync_dist=True,
             )
+
+            for men in self.trainer.datamodule.test_data["mention_data"]:
+                self.test_results["n_mentions_per_type"][men["type"]] += 1
 
         self.test_results = convert_defaultdict(self.test_results)
 
         # Gather results from all GPUs
-        # Store results for evaluation purposes (failure, success etc...)
         gathered_test_results = [None] * torch.distributed.get_world_size()
         torch.distributed.all_gather_object(gathered_test_results, self.test_results)
-        # Store results for evaluation object (recall_k, plot etc...)
         gathered_output_eval = [None] * torch.distributed.get_world_size()
         torch.distributed.all_gather_object(gathered_output_eval, self.output_eval)
 
         # Only the main process should save the combined results
         if self.trainer.is_global_zero:
-
+            non_summing_keys = {
+                "n_mentions_per_type",
+                "filtered_length",
+                "unfiltered_length",
+            }
             combined_test_results = gathered_test_results[0]
+
             for result in gathered_test_results[1:]:
-                combined_test_results = merge_dicts(combined_test_results, result)
+                combined_test_results = merge_dicts(
+                    combined_test_results, result, non_summing_keys
+                )
+
+            # Average the results across all GPUs for the specific metrics
+            world_size = torch.distributed.get_world_size()
+            combined_test_results["normalized_accuracy"] /= world_size
+            combined_test_results["normalized_macro_avg_acc"] /= world_size
+
+            if self.trainer.limit_test_batches == 1.0:
+                combined_test_results["unnormalized_accuracy"] /= world_size
+
+                # For unnormalized_macro_avg_acc
+                for mention_type in combined_test_results["n_mentions_per_type"]:
+                    combined_test_results["unnormalized_macro_avg_acc"] += float(
+                        combined_test_results["n_hits_per_type"][mention_type]
+                        / combined_test_results["n_mentions_per_type"][mention_type]
+                        if combined_test_results["n_mentions_per_type"][mention_type]
+                        > 0
+                        else 0
+                    )
+
+                combined_test_results["unnormalized_macro_avg_acc"] = (
+                    combined_test_results["unnormalized_macro_avg_acc"]
+                    / len(combined_test_results["n_mentions_per_type"])
+                    * 100
+                )
 
             all_output_eval = [
                 item for sublist in gathered_output_eval for item in sublist

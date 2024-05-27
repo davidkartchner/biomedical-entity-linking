@@ -2,9 +2,11 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from torch.utils.data import TensorDataset
-from torch.utils.data import DataLoader, SequentialSampler
+from torch.utils.data import DataLoader, SequentialSampler, DistributedSampler
+from torch.distributed import all_gather, get_rank, broadcast
 import math
 import faiss
+import os
 from IPython import embed
 
 from bioel.models.arboel.biencoder.model.common.params import (
@@ -204,7 +206,7 @@ def process_mention_data(
     logger=None,
 ):
     """
-    Description #DD2
+    Description
     -----------
     Process the raw text mention data to a tokenized version and packages it into a form that can be directly used for training or inference in NLP models
 
@@ -511,7 +513,7 @@ def compute_gold_clusters(mention_data):
     return clusters
 
 
-def build_index(embeds, force_exact_search, probe_mult_factor=1):  # DD7
+def build_index(embeds, force_exact_search, probe_mult_factor=1):
     """
     Description
     -----------
@@ -523,7 +525,7 @@ def build_index(embeds, force_exact_search, probe_mult_factor=1):  # DD7
         Embeddings for which the index is to be built
     force_exact_search : bool
         Boolean flag indicating whether to use exact search instead of approximate search
-    probe_mult_factor : int or float ##DD8
+    probe_mult_factor : int or float
         A multiplier factor used to determine the number of cells to probe in an approximate search
     -------
     Returns index (which is a FAISS index object). This index can be used for efficient similarity search among the embeddings.
@@ -559,19 +561,16 @@ def build_index(embeds, force_exact_search, probe_mult_factor=1):  # DD7
     return index
 
 
-# Only need to do "distances, indices = index.search(np.array([query]), k)" to get the k closest neighbors and their distances from the query
-
-
 def embed_and_index(
     model,
     token_id_vecs,
     encoder_type,
     batch_size=768,
-    # n_gpu=1,
     only_embed=False,
     corpus=None,
     force_exact_search=False,
     probe_mult_factor=1,
+    world_size=1,
 ):
     """
     Description
@@ -588,8 +587,6 @@ def embed_and_index(
         Determines the type of encoder to be used from the model. It must be either "context" or "candidate".
     batch_size : int
         The number of token vectors to process in each batch.
-    n_gpu : int
-        The number of GPUs to be used for processing.
     only_embed : bool
         If set to True, the function returns only the embeddings, skipping the indexing part.
     corpus : list of dict
@@ -607,7 +604,7 @@ def embed_and_index(
         And optionally : Builds and returns a search index based on the embeddings.
     """
 
-    with torch.no_grad():  # DD9 Set all the gradients in the computation graph to be non-updatable
+    with torch.no_grad():
         # Selects the appropriate encoder
         if encoder_type == "context":  # mention
             print("encode context")
@@ -620,25 +617,43 @@ def embed_and_index(
 
         # Compute embeddings
         embeds = None
-        sampler = SequentialSampler(
-            token_id_vecs
-        )  # Type of sampler (other one is RandomSampler)
+        # sampler = SequentialSampler(token_id_vecs)
+        sampler = (
+            DistributedSampler(token_id_vecs, num_replicas=world_size, rank=get_rank())
+            if world_size > 1
+            else SequentialSampler(token_id_vecs)
+        )
         dataloader = DataLoader(token_id_vecs, sampler=sampler, batch_size=batch_size)
         iter_ = tqdm(dataloader, desc="Embedding in batches")
         for step, batch in enumerate(iter_):
             batch_embeds = encoder(
                 batch.cuda()
-            )  # batch is being transferred to a GPU (if available) for encoder processing.
+            )  # After encoding, it's being sent back to cpu
             embeds = (  # D Concatenate all embeddings into a single array
                 batch_embeds
                 if embeds is None
-                else np.concatenate((embeds, batch_embeds), axis=0)  # DD10
+                else np.concatenate((embeds, batch_embeds), axis=0)
             )
+
+        # If using multiple GPUs, gather all embeddings on each process
+        if world_size > 1:
+            # Convert numpy array to tensor for gathering
+            embeds_tensor = torch.tensor(embeds).cuda()
+            # Prepare a list to gather all tensor embeddings
+            gather_list = [torch.zeros_like(embeds_tensor) for _ in range(world_size)]
+            all_gather(gather_list, embeds_tensor)
+            # Concatenate all gathered tensors and convert back to numpy
+            embeds = torch.cat(gather_list, dim=0).cpu().numpy()
+            # Trim the extra samples from DistributedSampler padding
+            embeds = embeds[: token_id_vecs.size(0)]
+
+        if isinstance(embeds, torch.Tensor):
+            embeds = embeds.numpy()
 
         if only_embed:
             return embeds
 
-        if corpus is None:  # DD11
+        if corpus is None:
             # When "use_types" is False
             index = build_index(
                 embeds, force_exact_search, probe_mult_factor=probe_mult_factor
@@ -664,6 +679,7 @@ def embed_and_index(
                 probe_mult_factor=probe_mult_factor,
             )
             corpus_idxs[ent_type] = np.array(corpus_idxs[ent_type])
+
         return embeds, search_indexes, corpus_idxs
 
 

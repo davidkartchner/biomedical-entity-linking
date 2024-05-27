@@ -3,11 +3,15 @@ from typing import List, Optional, Union, Dict
 from tqdm import tqdm
 
 from bioel.logger import setup_logger
+from bioel.utils.bigbio_utils import dataset_unique_gene_ids
 
 import obonet
 import csv
 from bioel.utils.obo_utils import _obo_extract_definition, _obo_extract_synonyms
 from bioel.utils.umls_utils import UmlsMappings
+import pandas as pd
+import warnings
+import ujson
 
 logger = setup_logger()
 
@@ -37,6 +41,9 @@ class BiomedicalOntology:
     )  # Dict mapping CUI: BiomedicalEntity
     abbrev: Optional[str] = None  # Abbreviated name of ontology if different than name
     metadata: Optional[dict] = None
+    dataset: Optional[str] = (
+        None  # Name of the dataset to work with (only for Entrez ontology)
+    )
 
     def get_canonical_name(self):
         """
@@ -230,6 +237,97 @@ class BiomedicalOntology:
             entities[element["DiseaseID"]] = entity
 
             types.append("Disease")
+
+        return cls(entities=entities, types=types, name=name, abbrev=abbrev)
+
+    @classmethod
+    def load_entrez(cls, filepath, dataset, name=None, abbrev=None, api_key=""):
+        """
+        Read medic ontology
+
+        Parameters:
+        ----------------------
+            filepath: str (Pointing to the medic directory)
+            name: str (optional)
+            abbrev: str (optional)
+            api_key: str (optional)
+        """
+
+        unique_gene_ids = dataset_unique_gene_ids(dataset)
+
+        entities = {}
+        types = []
+
+        logger.info(f"Reading entrez from {filepath}")
+
+        # Open the TSV file
+        entrez = pd.read_csv(
+            filepath,
+            delimiter="\t",
+            usecols=[
+                "#tax_id",
+                "GeneID",
+                "Symbol",
+                "Synonyms",
+                "Symbol_from_nomenclature_authority",
+                "Full_name_from_nomenclature_authority",
+                "Other_designations",
+                "type_of_gene",
+                "description",
+                "dbXrefs",
+            ],
+            na_filter=False,
+            low_memory=False,
+        ).rename(
+            {
+                "Symbol_from_nomenclature_authority": "official_symbol",
+                "Full_name_from_nomenclature_authority": "official_name",
+                "#tax_id": "tax_id",
+            },
+            axis=1,
+        )
+        entrez.columns = [x.lower() for x in entrez.columns]
+
+        geneid_mask = (
+            (entrez.geneid.isin(unique_gene_ids))
+            & (~entrez.type_of_gene.isin(["unknown", "tRNA", "biological-region"]))
+            & (entrez.description != "hypothetical protein")
+            & (~entrez.official_name.map(lambda x: x.lower().startswith("predicted")))
+        )
+        entrez = entrez[geneid_mask]
+
+        entrez.replace("-", "", inplace=True)
+        entrez["geneid"] = entrez["geneid"].map(lambda x: f"NCBIGene:{x}")
+        entrez["metadata"] = entrez[
+            [
+                "official_symbol",
+                "official_name",
+            ]
+        ].progress_apply(
+            lambda x: ";".join(list(set([i for i in x if i.strip() != "-"]))), axis=1
+        )
+
+        for index, row in entrez.iterrows():
+
+            entity = BiomedicalEntity(
+                cui=row["geneid"],
+                name=row["symbol"],
+                types=row["type_of_gene"],
+                aliases=row["synonyms"],
+                definition=row["description"],
+                taxonomy=row["tax_id"],
+                metadata=row["metadata"],
+            )
+
+            if row["geneid"] in entities:
+                logger.warning(
+                    f"Duplicate CUI {row['geneid']} found in ontology.  Skipping."
+                )
+                continue
+
+            entities[row["geneid"]] = entity
+
+            types.append(row["type_of_gene"])
 
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
 

@@ -9,6 +9,7 @@ import numpy as np
 import torch
 import math
 import lightning as L
+import torch.distributed as dist
 from transformers import AutoModel
 from pytorch_transformers.optimization import WarmupLinearSchedule
 from datetime import datetime
@@ -77,6 +78,7 @@ def create_versioned_filename(base_path, base_name, extension=".json"):
 
 
 def evaluate(
+    params,
     logger,
     entity_data,
     query_data,
@@ -137,7 +139,9 @@ def evaluate(
         {}
     )  # Store results of the NN search and distance between entities and mentions
 
-    for k in [0, 1, 2, 4, 8]:
+    knn_vals = [0] + [2**i for i in range(int(math.log(params["knn"], 2)) + 1)]
+
+    for k in knn_vals:
         joint_graphs[k] = {
             "rows": np.array([]),
             "cols": np.array([]),
@@ -1329,9 +1333,12 @@ class LitArboel(L.LightningModule):
         return [optimizer], [{"scheduler": scheduler, "interval": "step"}]
 
     def on_train_epoch_start(self):
+        print(
+            "world size :",
+            self.trainer.world_size,
+        )
 
-        print("on train epoch start")
-
+        logger.info("On train epoch start")
         "IV.1) Compute mention and entity embeddings and indexes at the start of each epoch"
         # Compute mention and entity embeddings and indexes at the start of each epoch
         # Corpus is a collection of entities, which is used to build type-specific search indexes if provided.
@@ -1358,6 +1365,7 @@ class LitArboel(L.LightningModule):
                 force_exact_search=self.hparams["force_exact_search"],
                 batch_size=self.hparams["embed_batch_size"],
                 probe_mult_factor=self.hparams["probe_mult_factor"],
+                world_size=self.trainer.world_size,
             )
             (
                 self.train_men_embeds,
@@ -1371,6 +1379,7 @@ class LitArboel(L.LightningModule):
                 force_exact_search=self.hparams["force_exact_search"],
                 batch_size=self.hparams["embed_batch_size"],
                 probe_mult_factor=self.hparams["probe_mult_factor"],
+                world_size=self.trainer.world_size,
             )
 
         else:  # general indexes
@@ -1382,6 +1391,7 @@ class LitArboel(L.LightningModule):
                     force_exact_search=self.hparams["force_exact_search"],
                     batch_size=self.hparams["embed_batch_size"],
                     probe_mult_factor=self.hparams["probe_mult_factor"],
+                    world_size=self.trainer.world_size,
                 )
             )
             self.train_men_embeds, self.train_men_index = data_process.embed_and_index(
@@ -1391,6 +1401,7 @@ class LitArboel(L.LightningModule):
                 force_exact_search=self.hparams["force_exact_search"],
                 batch_size=self.hparams["embed_batch_size"],
                 probe_mult_factor=self.hparams["probe_mult_factor"],
+                world_size=self.trainer.world_size,
             )
 
         # Number of entities
@@ -1461,8 +1472,6 @@ class LitArboel(L.LightningModule):
 
         self.total_skipped = self.total_knn_men_negs = 0
 
-        pass
-
     def on_validation_epoch_start(self):
 
         torch.cuda.empty_cache()  # Empty the CUDA cache to free up GPU memory
@@ -1498,6 +1507,7 @@ class LitArboel(L.LightningModule):
                 force_exact_search=self.hparams["force_exact_search"],
                 batch_size=self.hparams["embed_batch_size"],
                 probe_mult_factor=self.hparams["probe_mult_factor"],
+                world_size=self.trainer.world_size,
             )
             logger.info(
                 "VALIDATION. Queries: Embedding and building index"
@@ -1514,6 +1524,7 @@ class LitArboel(L.LightningModule):
                 force_exact_search=self.hparams["force_exact_search"],
                 batch_size=self.hparams["embed_batch_size"],
                 probe_mult_factor=self.hparams["probe_mult_factor"],
+                world_size=self.trainer.world_size,
             )
         else:  # corpus = None
             """
@@ -1530,6 +1541,7 @@ class LitArboel(L.LightningModule):
                     force_exact_search=self.hparams["force_exact_search"],
                     batch_size=self.hparams["embed_batch_size"],
                     probe_mult_factor=self.hparams["probe_mult_factor"],
+                    world_size=self.trainer.world_size,
                 )
             )
             logger.info("VALIDATION. Queries: Embedding and building index")
@@ -1540,7 +1552,13 @@ class LitArboel(L.LightningModule):
                 force_exact_search=self.hparams["force_exact_search"],
                 batch_size=self.hparams["embed_batch_size"],
                 probe_mult_factor=self.hparams["probe_mult_factor"],
+                world_size=self.trainer.world_size,
             )
+
+            # Construct the full file path
+            file_path = os.path.join(self.hparams["data_path"], "valid_men_embeds2.npy")
+            # Save the numpy array to the file
+            np.save(file_path, self.valid_men_embeds)
 
         "Performs k-nearest neighbors (k-NN) search to establish relationships between mentions and entities."
         logger.info("VALIDATION. Eval: Starting KNN search...")
@@ -1637,8 +1655,13 @@ class LitArboel(L.LightningModule):
     def validation_step(self, batch_, batch_idx):
 
         self.n_entities = len(self.trainer.datamodule.entity_dictionary)
+        print(
+            "self.valid_men_embeds :",
+            self.valid_men_embeds,
+        )
 
         self.max_acc, self.dict_acc = evaluate(
+            params=self.hparams,
             logger=logger,
             entity_data=self.trainer.datamodule.entity_dictionary,
             query_data=self.trainer.datamodule.valid_processed_data,
@@ -1657,7 +1680,7 @@ class LitArboel(L.LightningModule):
 
     def on_validation_epoch_end(self):
         self.log("max_acc", self.max_acc, on_epoch=True, sync_dist=True)
-        
+
         for key, value in self.dict_acc.items():
             self.log(f"dict_acc_{key}", value, on_epoch=True, sync_dist=True)
 
@@ -1668,7 +1691,7 @@ class LitArboel(L.LightningModule):
                 self.hparams.get("output_path"),
                 f"embed_and_index_dict_:epoch_{self.current_epoch}.pth",
             )
-            torch.save(self.best_embed_and_index_dict, save_path)
+            torch.save(self.best_embed_and_index_dict, save_path, pickle_protocol=4)
 
     def test_step(self, batch_, batch_idx):
 

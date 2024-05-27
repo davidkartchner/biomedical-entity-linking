@@ -64,7 +64,9 @@ def get_type_gcd(types, type2geneology, cached_types: dict = None):
                     unique_types = curr_unique
 
 
-def process_ontology(ontology: BiomedicalOntology, data_path: str):
+def process_ontology(
+    ontology: BiomedicalOntology, data_path: str, tax2name_filepath: str = None
+):
     """
     This function prepares the entity data : dictionary.pickle
 
@@ -74,6 +76,8 @@ def process_ontology(ontology: BiomedicalOntology, data_path: str):
         Ontology associated with the dataset
     - data_path : str
         Path where to load and save dictionary.pickle
+    - tax2name_filepath : str
+        Path to the taxonomy to name file
     """
 
     # Check if equivalent CUIs are present for the first entity
@@ -90,6 +94,10 @@ def process_ontology(ontology: BiomedicalOntology, data_path: str):
 
         return entities, equivalant_cuis
 
+    if tax2name_filepath:
+        with open(tax2name_filepath, "r") as f:
+            tax2name = ujson.load(f)
+
     ontology_entities = []
     for cui, entity in tqdm(ontology.entities.items()):
         new_entity = {}
@@ -105,22 +113,47 @@ def process_ontology(ontology: BiomedicalOntology, data_path: str):
 
         if entity.aliases:
             if entity.definition:
-                new_entity["description"] = (
-                    f"{entity.name} ( {entity.types} : {entity.aliases} ) [{entity.definition}]"
-                )
+                if entity.taxonomy:
+                    new_entity["description"] = (
+                        f"{entity.name} ( {tax2name[str(entity.taxonomy)]}, {entity.types} : {entity.aliases} ) [{entity.definition}]"
+                    )
+
+                else:
+                    new_entity["description"] = (
+                        f"{entity.name} ( {entity.types} : {entity.aliases} ) [{entity.definition}]"
+                    )
 
             else:
-                new_entity["description"] = (
-                    f"{entity.name} ( {entity.types} : {entity.aliases} )"
-                )
+                if entity.taxonomy:
+                    new_entity["description"] = (
+                        f"{entity.name} ( {tax2name[str(entity.taxonomy)]}, {entity.types} : {entity.aliases} )"
+                    )
+                else:
+                    new_entity["description"] = (
+                        f"{entity.name} ( {entity.types} : {entity.aliases} )"
+                    )
 
         else:
             if entity.definition:
-                new_entity["description"] = (
-                    f"{entity.name} ({entity.types}) [{entity.definition}]"
-                )
+                if entity.taxonomy:
+                    new_entity["description"] = (
+                        f"{entity.name} ( {tax2name[str(entity.taxonomy)]}, {entity.types}) [{entity.definition}]"
+                    )
+
+                else:
+                    new_entity["description"] = (
+                        f"{entity.name} ( {entity.types}) [{entity.definition}]"
+                    )
             else:
-                new_entity["description"] = f"{entity.name} ({entity.types})"
+                if entity.taxonomy:
+                    new_entity["description"] = (
+                        f"{entity.name} ( {tax2name[str(entity.taxonomy)]}, {entity.types})"
+                    )
+                else:
+                    new_entity["description"] = f"{entity.name} ({entity.types})"
+
+        if hasattr(entity, "metadata") and entity.metadata:
+            new_entity["description"] += f" {entity.metadata}"
 
         if equivalant_cuis:
             new_entity["cuis"] = entity.equivalant_cuis
@@ -145,6 +178,7 @@ def process_mention_dataset(
     dataset: str,
     data_path: str,
     path_to_abbrev=None,
+    tax2name_filepath=None,
 ):
     """
     This function prepares the mentions data :  Creates the train.jsonl, valid.jsonl, test.jsonl
@@ -167,6 +201,8 @@ def process_mention_dataset(
     Name of the dataset
     - data_path : str
     Path where to load and save dictionary.pickle
+    - tax2name_filepath : str
+    Path to the taxonomy to name file
     """
     data = load_bigbio_dataset(dataset_name=dataset)
     exclude = CUIS_TO_EXCLUDE[dataset]
@@ -175,7 +211,7 @@ def process_mention_dataset(
     if path_to_abbrev:
         data = add_deabbreviations(dataset=data, path_to_abbrev=path_to_abbrev)
 
-    entities, equivalant_cuis = process_ontology(ontology, data_path)
+    entities, equivalant_cuis = process_ontology(ontology, data_path, tax2name_filepath)
 
     entity_dictionary = {d["cui"]: d for d in tqdm(entities)}  # CC1
 
