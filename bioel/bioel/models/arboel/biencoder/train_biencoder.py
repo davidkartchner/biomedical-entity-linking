@@ -140,7 +140,7 @@ def main(args):
         "10800"  # Set NCCL timeout to 3 hour to avoid timeout errors for medmentions_st21pv
     )
     print("Current seed:", args["seed"])
-    seed_everything(args["seed"])
+    # seed_everything(args["seed"])
 
     # Load the ontology only on the main process (rank 0)
     create_ontology_object(args)

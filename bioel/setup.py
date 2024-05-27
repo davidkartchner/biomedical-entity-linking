@@ -35,6 +35,7 @@ setup(
         "datasets",
         "ujson",
         "bioc",
+<<<<<<< HEAD
         "logger" "lightning",
         "ipython",
         "cython",
@@ -47,3 +48,10 @@ setup(
         "scikit-learn",
     ],
 )
+=======
+        "torch",
+        "transformers",
+        "faiss-gpu"
+    ]
+)
+>>>>>>> origin/krissbert

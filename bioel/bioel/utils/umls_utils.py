@@ -129,6 +129,7 @@ class UmlsMappings(object):
             # "sui",
             "aui",
             # "saui",
+            "suppress",
         ]
 
         if self.debug:
