@@ -202,6 +202,7 @@ def evaluate_single_batch(
         for i, m_idx in enumerate(mention_idxs):
             m_idx = m_idx.item()
             men_query = processed_mention_data[m_idx]
+            print("mention_id : ", men_query["mention_id"])
             best_idx = recall_predicted[i][0]
             dict_pred = dictionary[stored_candidates["candidates"][m_idx][best_idx]]
             report_obj = {
