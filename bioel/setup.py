@@ -45,5 +45,6 @@ setup(
         "faiss-cpu",
         "wandb",
         "scikit-learn",
+        "torch",
     ],
 )
