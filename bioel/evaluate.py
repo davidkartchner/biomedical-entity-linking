@@ -187,6 +187,10 @@ def min_hit_index(gold_cuis, candidates, eval_mode):
     """
     Find index of first hit in candidates
     """
+    # Check if no candidates
+    if candidates == [[]]:
+        return 1000000
+
     if eval_mode == "basic":
         flat_candidates = list_flatten(candidates)
         for i, c in enumerate(flat_candidates):
