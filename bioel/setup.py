@@ -43,6 +43,6 @@ setup(
         "faiss-gpu",
         "faiss-cpu",
         "wandb",
-        "sci-kit-learn",
+        "scikit-learn",
     ],
 )
