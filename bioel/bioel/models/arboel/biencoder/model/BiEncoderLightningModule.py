@@ -1643,11 +1643,6 @@ class LitArboel(L.LightningModule):
     def validation_step(self, batch_, batch_idx):
 
         self.n_entities = len(self.trainer.datamodule.entity_dictionary)
-        print(
-            "self.valid_men_embeds :",
-            self.valid_men_embeds,
-        )
-
         self.max_acc, self.dict_acc = evaluate(
             params=self.hparams,
             logger=logger,
