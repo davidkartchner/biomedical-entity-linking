@@ -489,6 +489,12 @@ class BlinkParser(argparse.ArgumentParser):
             help="Function to load ontology, e.g., load_medic, load_mesh, load_umls",
         )
 
+        parser.add_argument(
+            "--tax2name_filepath",
+            type=str,
+            help="Path to the taxonomy to name file",
+        )
+
     def add_eval_args(self, args=None):
         """
         Add model evaluation args.
