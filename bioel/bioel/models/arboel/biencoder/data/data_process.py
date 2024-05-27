@@ -570,7 +570,7 @@ def embed_and_index(
     corpus=None,
     force_exact_search=False,
     probe_mult_factor=1,
-    world_size=1,
+    # world_size=1,
 ):
     """
     Description
@@ -617,12 +617,12 @@ def embed_and_index(
 
         # Compute embeddings
         embeds = None
-        # sampler = SequentialSampler(token_id_vecs)
-        sampler = (
-            DistributedSampler(token_id_vecs, num_replicas=world_size, rank=get_rank())
-            if world_size > 1
-            else SequentialSampler(token_id_vecs)
-        )
+        sampler = SequentialSampler(token_id_vecs)
+        # sampler = (
+        #     DistributedSampler(token_id_vecs, num_replicas=world_size, rank=get_rank())
+        #     if world_size > 1
+        #     else SequentialSampler(token_id_vecs)
+        # )
         dataloader = DataLoader(token_id_vecs, sampler=sampler, batch_size=batch_size)
         iter_ = tqdm(dataloader, desc="Embedding in batches")
         for step, batch in enumerate(iter_):
@@ -635,17 +635,17 @@ def embed_and_index(
                 else np.concatenate((embeds, batch_embeds), axis=0)
             )
 
-        # If using multiple GPUs, gather all embeddings on each process
-        if world_size > 1:
-            # Convert numpy array to tensor for gathering
-            embeds_tensor = torch.tensor(embeds).cuda()
-            # Prepare a list to gather all tensor embeddings
-            gather_list = [torch.zeros_like(embeds_tensor) for _ in range(world_size)]
-            all_gather(gather_list, embeds_tensor)
-            # Concatenate all gathered tensors and convert back to numpy
-            embeds = torch.cat(gather_list, dim=0).cpu().numpy()
-            # Trim the extra samples from DistributedSampler padding
-            embeds = embeds[: token_id_vecs.size(0)]
+        # # If using multiple GPUs, gather all embeddings on each process
+        # if world_size > 1:
+        #     # Convert numpy array to tensor for gathering
+        #     embeds_tensor = torch.tensor(embeds).cuda()
+        #     # Prepare a list to gather all tensor embeddings
+        #     gather_list = [torch.zeros_like(embeds_tensor) for _ in range(world_size)]
+        #     all_gather(gather_list, embeds_tensor)
+        #     # Concatenate all gathered tensors and convert back to numpy
+        #     embeds = torch.cat(gather_list, dim=0).cpu().numpy()
+        #     # Trim the extra samples from DistributedSampler padding
+        #     embeds = embeds[: token_id_vecs.size(0)]
 
         if isinstance(embeds, torch.Tensor):
             embeds = embeds.numpy()

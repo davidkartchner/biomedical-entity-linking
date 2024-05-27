@@ -284,7 +284,7 @@ def correct_medlinker_candidates(medlinker_output):
 
 class Evaluate:
     def __init__(
-        self, dataset_names, model_names, result_path, abbreviations_path=None
+        self, dataset_names, model_names, path_to_result, abbreviations_path=None
     ):
         """
         Parameters
@@ -293,14 +293,28 @@ class Evaluate:
             A list of dataset names to be used in the evaluation.
         model_names : list of str
             A list of model names to be evaluated.
-        result_path : str
+        path_to_result : nested dict
             The path to the directory where the result files for each model and dataset are stored.
+            Ex : path_to_result = {
+                "bc5cdr": {
+                    "arboEL": "/path/to/output_eval.json",
+                    "krissbert": "/path/to/output_eval.json",
+                },
+                "ncbi_disease": {
+                    "arboEL": "/path/to/output_eval.json",
+                    "krissbert": "/path/to/output_eval.json",
+                },
+                "nlmchem" : {
+                    "arboEL": "/path/to/output_eval.json",
+                    "krissbert": "/path/to/output_eval.json",
+                },
+            }
         abbreviations_path : str
             The path to the JSON file containing abbreviations to be used for processing the datasets.
         """
         self.dataset_names = dataset_names
         self.model_names = model_names
-        self.result_path = result_path
+        self.path_to_result = path_to_result
         self.abbreviations_path = abbreviations_path
         self.full_results = {}
         self.datasets = {}
@@ -317,7 +331,7 @@ class Evaluate:
         for name in self.dataset_names:
             self.datasets[name] = {}
             for model in self.model_names:
-                file_path = f"{self.result_path}/{name}/{model}_output_eval.json"
+                file_path = self.path_to_result[name][model]
                 if not os.path.exists(file_path):
                     raise FileNotFoundError(
                         f"Results file for model {model} on dataset {name} not found. Path to this file doesn't exist: {file_path}"
@@ -536,7 +550,8 @@ class Evaluate:
                     if model in recall_dict:
                         plot_recall_at_k(
                             recall_dict[model],
-                            legend_key=model_to_pretty_name.get(model, model),
+                            # legend_key=model_to_pretty_name.get(model, model),
+                            legend_key=model,
                             ax=ax,
                             color=model_to_color[model],
                             alpha=0.7,
