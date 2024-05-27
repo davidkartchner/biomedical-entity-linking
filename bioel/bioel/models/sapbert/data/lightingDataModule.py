@@ -22,6 +22,9 @@ from torch.utils.data import DataLoader
 # from bioel.models.arboel.model.eval_cluster_linking import filter_by_context_doc_id
 from bioel.ontology import BiomedicalOntology
 from bioel.models.sapbert.data.utils import generate_pretraining_data
+from bioel.models.sapbert.data.utils import MetricLearningDataset
+from bioel.models.sapbert.data.utils import MetricLearningDataset_pairwise
+
 from bioel import bigbio_utils
 
 import logging
