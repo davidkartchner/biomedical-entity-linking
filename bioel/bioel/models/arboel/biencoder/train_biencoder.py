@@ -149,7 +149,11 @@ def main(args):
 
     data_module = ArboelDataModule(params=args)
 
-    model = LitArboel(params=args)
+    # model = LitArboel(params=args)
+    model = LitArboel.load_from_checkpoint(
+        params=args,
+        checkpoint_path="/home2/cye73/results2/arboel/medmentions_st21pv/biencoder_2024-05-26_22-48-42-epoch=0-max_acc=13.14.ckpt",
+    )
 
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     model_checkpoint = ModelCheckpoint(

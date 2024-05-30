@@ -3,7 +3,7 @@ from typing import List, Optional, Union, Dict
 from tqdm import tqdm
 
 from bioel.logger import setup_logger
-from bioel.utils.bigbio_utils import dataset_unique_gene_ids
+from bioel.utils.bigbio_utils import dataset_unique_tax_ids
 
 import obonet
 import csv
@@ -253,8 +253,6 @@ class BiomedicalOntology:
             api_key: str (optional)
         """
 
-        unique_gene_ids = dataset_unique_gene_ids(dataset)
-
         entities = {}
         types = []
 
@@ -288,8 +286,10 @@ class BiomedicalOntology:
         )
         entrez.columns = [x.lower() for x in entrez.columns]
 
+        unique_tax_ids = dataset_unique_tax_ids(dataset, entrez)
+
         geneid_mask = (
-            (entrez.geneid.isin(unique_gene_ids))
+            (entrez.geneid.isin(unique_tax_ids))
             & (~entrez.type_of_gene.isin(["unknown", "tRNA", "biological-region"]))
             & (entrez.description != "hypothetical protein")
             & (~entrez.official_name.map(lambda x: x.lower().startswith("predicted")))

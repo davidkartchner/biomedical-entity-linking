@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import seaborn as sns
 import ujson
 import sys
@@ -216,7 +215,7 @@ def recall_at_k(
     df,
     candidate_col,
     gold_col="db_ids",
-    max_k: int = 10,
+    max_k: int = 5,
     filter_null=False,
     eval_mode="basic",
 ):
@@ -242,7 +241,7 @@ def recall_at_k(
 
 
 def plot_recall_at_k(
-    recall_dict, max_k=10, legend_key=None, ax=None, color=None, alpha=1
+    recall_dict, max_k=5, legend_key=None, ax=None, color=None, alpha=1
 ):
     if ax is not None:
         ax.plot(
@@ -532,6 +531,8 @@ class Evaluate:
                 axs = [axs]
             elif num_rows == 1 or num_cols == 1:
                 axs = axs.flatten()
+            else:
+                axs = axs.ravel()
 
             for ax in axs:
                 if num_cols > 1:
@@ -563,7 +564,15 @@ class Evaluate:
             for ax in axs[num_datasets:]:
                 ax.axis("off")
 
-            axs[0].legend(ncol=5, bbox_to_anchor=(0.5, -0.57), loc="lower center")
+            handles, labels = axs[0].get_legend_handles_labels()
+            fig.legend(
+                handles,
+                labels,
+                loc="lower center",
+                ncol=len(self.model_names),
+                bbox_to_anchor=(0.5, -0.05),
+            )
+
             fig.suptitle(
                 f"Recall@k for {eval_strategy} evaluation strategy", fontsize=16
             )
