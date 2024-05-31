@@ -445,7 +445,7 @@ def dataset_unique_tax_ids(dataset: str, entrez):
         .tolist()
     )
 
-    logger.info(f"Number of unique db_ids in {dataset} : {len(unique_tax_id)}")
+    logger.info(f"Number of unique tax_ids in {dataset} : {len(unique_tax_id)}")
 
     return unique_tax_id
 

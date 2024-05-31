@@ -289,7 +289,7 @@ class BiomedicalOntology:
         unique_tax_ids = dataset_unique_tax_ids(dataset, entrez)
 
         geneid_mask = (
-            (entrez.geneid.isin(unique_tax_ids))
+            (entrez.tax_id.isin(unique_tax_ids))
             & (~entrez.type_of_gene.isin(["unknown", "tRNA", "biological-region"]))
             & (entrez.description != "hypothetical protein")
             & (~entrez.official_name.map(lambda x: x.lower().startswith("predicted")))
