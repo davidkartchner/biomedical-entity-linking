@@ -1,18 +1,24 @@
 from bioel.models.arboel.crossencoder.data.CrossEncoderLightningDataModule import (
     CrossEncoderDataModule,
+    prepare_data,
 )
 from bioel.models.arboel.crossencoder.model.CrossEncoderLightningModule import (
     LitCrossEncoder,
 )
-from datetime import datetime
+from datetime import datetime, timedelta
+from lightning.pytorch.strategies.ddp import DDPStrategy
 from lightning.pytorch.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 import lightning as L
 from bioel.models.arboel.biencoder.model.common.params import BlinkParser
+import os
+import torch
 
 
 def main(args):
     print("Current seed:", args["seed"])
+
+    prepare_data(args)
 
     data_module = CrossEncoderDataModule(params=args)
 

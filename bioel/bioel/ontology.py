@@ -62,7 +62,6 @@ class BiomedicalOntology:
     def get_definition(self):
         """
         Get definition of entities in the ontology
-        data: list of dict
         """
         definitions_dict = {
             entity.cui: entity.definition

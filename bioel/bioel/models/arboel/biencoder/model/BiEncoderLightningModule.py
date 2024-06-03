@@ -1543,11 +1543,6 @@ class LitArboel(L.LightningModule):
                 probe_mult_factor=self.hparams["probe_mult_factor"],
             )
 
-            # Construct the full file path
-            file_path = os.path.join(self.hparams["data_path"], "valid_men_embeds2.npy")
-            # Save the numpy array to the file
-            np.save(file_path, self.valid_men_embeds)
-
         "Performs k-nearest neighbors (k-NN) search to establish relationships between mentions and entities."
         logger.info("VALIDATION. Eval: Starting KNN search...")
         # Fetch (k+1) NN mention candidates; fetching all mentions for within_doc to filter down later

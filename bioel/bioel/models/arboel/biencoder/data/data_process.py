@@ -4,6 +4,7 @@ from tqdm import tqdm
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader, SequentialSampler, DistributedSampler
 from torch.distributed import all_gather, get_rank, broadcast
+import torch.distributed as dist
 import math
 import faiss
 import os
@@ -629,7 +630,7 @@ def embed_and_index(
             batch_embeds = encoder(
                 batch.cuda()
             )  # After encoding, it's being sent back to cpu
-            embeds = (  # D Concatenate all embeddings into a single array
+            embeds = (
                 batch_embeds
                 if embeds is None
                 else np.concatenate((embeds, batch_embeds), axis=0)

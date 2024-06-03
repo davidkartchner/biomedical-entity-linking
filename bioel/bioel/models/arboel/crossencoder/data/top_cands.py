@@ -29,8 +29,6 @@ from IPython import embed
 
 from bioel.logger import setup_logger
 
-SCORING_BATCH_SIZE = 64
-
 
 def load_data(
     data_split,
@@ -159,6 +157,8 @@ def save_topk_biencoder_cands(
             batch_size=params["embed_batch_size"],
         )
     logger.info("Biencoder: Embedding and indexing finished")
+
+    print("NCCL_TIMEOUT:", os.environ.get("NCCL_TIMEOUT"))
 
     for mode in ["train", "valid", "test"]:
         logger.info(

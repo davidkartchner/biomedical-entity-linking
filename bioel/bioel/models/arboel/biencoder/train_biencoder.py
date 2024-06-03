@@ -137,7 +137,7 @@ def main(args):
 
     os.environ["WANDB_SILENT"] = "true"
     os.environ["NCCL_TIMEOUT"] = (
-        "10800"  # Set NCCL timeout to 3 hour to avoid timeout errors for medmentions_st21pv
+        "10800"  # Set NCCL timeout to 3 hour to avoid timeout errors for bigger ontology/dataset
     )
     print("Current seed:", args["seed"])
     # seed_everything(args["seed"])
