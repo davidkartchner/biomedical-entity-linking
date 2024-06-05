@@ -55,7 +55,9 @@ def train_model(params, model):
         verbose=True,
     )
 
-    wandb_logger = WandbLogger(project=params["experiment"])
+    wandb_logger = WandbLogger(
+        project=params["experiment"] if params["experiment"] else "Experiment"
+    )
     trainer = L.Trainer(
         num_sanity_val_steps=0,
         limit_train_batches=(

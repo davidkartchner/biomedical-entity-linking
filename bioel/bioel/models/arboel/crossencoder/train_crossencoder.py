@@ -35,9 +35,13 @@ def train_model(params, model):
     wandb_logger = WandbLogger(project=params["experiment"])
 
     trainer = L.Trainer(
-        limit_val_batches=20,
+        limit_train_batches=(
+            params["limit_train_batches"] if params["limit_train_batches"] else 1.0
+        ),
+        limit_val_batches=(
+            params["limit_val_batches"] if params["limit_val_batches"] else 20
+        ),
         # num_sanity_val_steps=0,
-        # fast_dev_run=True,
         max_epochs=params["num_train_epochs"],
         devices=params["devices"],
         accelerator="gpu" if params["devices"] else "cpu",
@@ -51,51 +55,3 @@ def train_model(params, model):
     )
 
     trainer.fit(model, datamodule=data_module)
-
-
-# def main(args):
-#     print("Current seed:", args["seed"])
-
-#     prepare_data(args)
-
-#     data_module = CrossEncoderDataModule(params=args)
-
-#     model = LitCrossEncoder(params=args)
-
-#     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-#     model_checkpoint = ModelCheckpoint(
-#         monitor="Accuracy",  # Metric to monitor
-#         dirpath=args["output_path"],  # Directory to save the model
-#         filename=f"crossencoder_{current_time}-{{epoch}}-{{Accuracy:.2f}}",  # Saves the model with epoch and val_loss in the filename
-#         save_top_k=1,  # Number of best models to save; -1 means save all of them
-#         mode="max",  # 'max' means the highest max_acc will be considered as the best model
-#         verbose=True,  # Logs a message whenever a model checkpoint is saved
-#     )
-
-#     wandb_logger = WandbLogger(project=args["experiment"])
-
-#     trainer = L.Trainer(
-#         limit_val_batches=20,
-#         # num_sanity_val_steps=0,
-#         # fast_dev_run=True,
-#         max_epochs=args["num_train_epochs"],
-#         devices=args["devices"],
-#         accelerator="gpu" if args["devices"] else "cpu",
-#         strategy="ddp_find_unused_parameters_true",
-#         enable_progress_bar=True,
-#         callbacks=[model_checkpoint],
-#         accumulate_grad_batches=args["gradient_accumulation_steps"],
-#         precision="16-mixed",
-#         check_val_every_n_epoch=1,
-#         logger=wandb_logger,
-#     )
-
-#     trainer.fit(model, datamodule=data_module)
-
-
-# if __name__ == "__main__":
-#     parser = BlinkParser(add_model_args=True)
-#     parser.add_training_args()
-#     args = parser.parse_args()
-#     print(args)
-#     main(args.__dict__)

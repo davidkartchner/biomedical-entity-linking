@@ -215,7 +215,7 @@ def recall_at_k(
     df,
     candidate_col,
     gold_col="db_ids",
-    max_k: int = 5,
+    max_k: int = 10,
     filter_null=False,
     eval_mode="basic",
 ):
@@ -241,7 +241,7 @@ def recall_at_k(
 
 
 def plot_recall_at_k(
-    recall_dict, max_k=5, legend_key=None, ax=None, color=None, alpha=1
+    recall_dict, max_k=10, legend_key=None, ax=None, color=None, alpha=1
 ):
     if ax is not None:
         ax.plot(
@@ -574,6 +574,7 @@ class Evaluate:
             )
 
             fig.suptitle(
-                f"Recall@k for {eval_strategy} evaluation strategy", fontsize=16
+                f"Recall@K for all models using {eval_strategy} evaluation strategy",
+                fontsize=16,
             )
             plt.show()

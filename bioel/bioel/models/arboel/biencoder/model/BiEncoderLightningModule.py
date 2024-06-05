@@ -691,7 +691,7 @@ def evaluate_test(
             logger.info(f"recall@{recall_k} = {recall_accuracy[recall_k]}")
 
         if params["only_recall"]:
-            exit()
+            return
 
         # Pickle the graphs
         print("Saving joint graphs...")
@@ -701,7 +701,7 @@ def evaluate_test(
         if params["only_embed_and_build"]:
             logger.info(f"Saved embedding data at: {embed_data_path}")
             logger.info(f"Saved graphs at: {graph_path}")
-            exit()
+            return
 
     graph_mode = params.get("graph_mode", None)
 

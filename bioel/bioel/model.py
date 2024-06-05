@@ -140,16 +140,22 @@ class Model_Wrapper:
 
 
 if __name__ == "__main__":
+    print("Start work on biencoder")
     arboel_biencoder = Model_Wrapper.load_arboel_biencoder(
         name="arboel_biencoder",
-        params_file="/home2/cye73/data_test2/arboel/ncbi_disease/params_biencoder.json",
+        params_file="/home2/cye73/data_test2/arboel/bc5cdr/params_biencoder.json",
     )
     arboel_biencoder.training()
     arboel_biencoder.inference()
 
+    print("Finish work on biencoder")
+
+    print("Start work on crossencoder")
     arboel_cross = Model_Wrapper.load_arboel_crossencoder(
         name="arboel_crossencoder",
-        params_file="/home2/cye73/data_test2/arboel/ncbi_disease/params_crossencoder.json",
+        params_file="/home2/cye73/data_test2/arboel/bc5cdr/params_crossencoder.json",
     )
     arboel_cross.training()
     arboel_cross.inference()
+
+    print("Finish work on crossencoder")
