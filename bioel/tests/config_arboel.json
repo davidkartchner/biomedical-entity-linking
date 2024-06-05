@@ -1,96 +1,101 @@
 {
-    "test_cases_train_biencoder": [
+    "test_cases_biencoder": [
         {
             "data_path": "/home2/cye73/data_test2/arboel/ncbi_disease",
             "output_path": "/home2/cye73/results2/arboel/ncbi_disease",
             "dataset": "ncbi_disease",
             "ontology": "medic",
-            "load_function": "load_medic",
             "ontology_dict": {
                 "name": "medic",
                 "filepath": "/mitchell/entity-linking/kbs/medic.tsv"
-            }
+            },
+            "pos_neg_loss": true,
+            "force_exact_search": true,
+            "embed_batch_size": 3500,
+            "model_name_or_path": "dmis-lab/biobert-base-cased-v1.2",
+            "num_train_epochs": 1,
+            "train_batch_size": 16,
+            "gradient_accumulation_steps": 8,
+            "knn": 10,
+            "experiment": "ncbi_disease4",
+            "path_to_abbrev": "/home2/cye73/data_test/abbreviations.json",
+            "recall_k": 64,
+            "only_recall": true,
+            "load_function": "load_medic",
+            "limit_train_batches": 1,
+            "devices": [
+                0
+            ]
         },
         {
-            "data_path": "/home2/cye73/data_test2/arboel/bc5cdr",
+            "data_path": "/home2/cye73/arboEL2/data/arboel/bc5cdr",
             "output_path": "/home2/cye73/results2/arboel/bc5cdr",
             "dataset": "bc5cdr",
             "ontology": "mesh",
-            "load_function": "load_mesh",
             "ontology_dict": {
                 "name": "mesh",
                 "filepath": "/mitchell/entity-linking/2017AA/META/"
-            }
+            },
+            "pos_neg_loss": true,
+            "force_exact_search": true,
+            "embed_batch_size": 3500,
+            "model_name_or_path": "dmis-lab/biobert-base-cased-v1.2",
+            "num_train_epochs": 6,
+            "train_batch_size": 16,
+            "gradient_accumulation_steps": 8,
+            "knn": 10,
+            "experiment": "bc5cdr",
+            "path_to_abbrev": "/home2/cye73/data_test/abbreviations.json",
+            "load_function": "load_mesh",
+            "limit_train_batches": 1,
+            "devices": [
+                0
+            ]
         }
     ],
-    "test_cases_eval_biencoder": [
+    "test_cases_crossencoder": [
         {
             "data_path": "/home2/cye73/data_test2/arboel/ncbi_disease",
             "output_path": "/home2/cye73/results2/arboel/ncbi_disease",
             "dataset": "ncbi_disease",
-            "ontology": "medic",
-            "load_function": "load_medic",
+            "model_name_or_path": "dmis-lab/biobert-base-cased-v1.2",
             "biencoder_checkpoint": "/home2/cye73/results2/arboel/ncbi_disease/2024-05-04_10-55-27-epoch=5-max_acc=87.33.ckpt",
-            "ontology_dict": {
-                "name": "medic",
-                "filepath": "/mitchell/entity-linking/kbs/medic.tsv"
-            }
-        },
-        {
-            "data_path": "/home2/cye73/data_test2/arboel/bc5cdr",
-            "output_path": "/home2/cye73/results2/arboel/bc5cdr",
-            "dataset": "bc5cdr",
-            "ontology": "mesh",
-            "load_function": "load_mesh",
-            "biencoder_checkpoint": "/home2/cye73/results2/arboel/bc5cdr/2024-05-02_20-56-16-epoch=5-max_acc=85.13.ckpt",
-            "ontology_dict": {
-                "name": "mesh",
-                "filepath": "/mitchell/entity-linking/2017AA/META/"
-            }
-        }
-    ],
-    "test_cases_train_crossencoder": [
-        {
-            "data_path": "/home2/cye73/data_test2/arboel/ncbi_disease",
-            "output_path": "/home2/cye73/results2/arboel/ncbi_disease",
-            "dataset": "ncbi_disease",
-            "ontology": "medic",
-            "load_function": "load_medic",
-            "biencoder_checkpoint": "/home2/cye73/results2/arboel/ncbi_disease/2024-05-04_10-55-27-epoch=5-max_acc=87.33.ckpt",
+            "learning_rate": 2e-05,
+            "num_train_epochs": 5,
+            "add_linear": true,
+            "train_batch_size": 2,
+            "eval_batch_size": 16,
             "biencoder_indices_path": "/home2/cye73/data_test2/arboel/ncbi_disease",
-            "ontology_dict": {
-                "name": "medic",
-                "filepath": "/mitchell/entity-linking/kbs/medic.tsv"
-            }
+            "experiment": "ncbi_disease_cross",
+            "recall_k": 64,
+            "path_to_abbrev": "/home2/cye73/data_test/abbreviations.json",
+            "equivalent_cuis": true,
+            "limit_test_batches": 1,
+            "devices": [
+                0
+            ]
         },
         {
-            "data_path": "/home2/cye73/data_test2/arboel/bc5cdr",
+            "data_path": "/home2/cye73/arboEL2/data/arboel/bc5cdr",
             "output_path": "/home2/cye73/results2/arboel/bc5cdr",
             "dataset": "bc5cdr",
             "ontology": "mesh",
-            "load_function": "load_mesh",
+            "model_name_or_path": "dmis-lab/biobert-base-cased-v1.2",
             "biencoder_checkpoint": "/home2/cye73/results2/arboel/bc5cdr/2024-05-02_20-56-16-epoch=5-max_acc=85.13.ckpt",
+            "learning_rate": 2e-05,
+            "num_train_epochs": 6,
+            "add_linear": true,
+            "train_batch_size": 2,
+            "eval_batch_size": 16,
             "biencoder_indices_path": "/home2/cye73/data_test2/arboel/bc5cdr",
-            "ontology_dict": {
-                "name": "mesh",
-                "filepath": "/mitchell/entity-linking/2017AA/META/"
-            }
-        }
-    ],
-    "test_cases_eval_crossencoder": [
-        {
-            "data_path": "/home2/cye73/data_test2/arboel/ncbi_disease",
-            "output_path": "/home2/cye73/results2/arboel/ncbi_disease",
-            "biencoder_checkpoint": "/home2/cye73/results2/arboel/ncbi_disease/2024-05-04_10-55-27-epoch=5-max_acc=87.33.ckpt",
-            "biencoder_indices_path": "/home2/cye73/data_test2/arboel/ncbi_disease",
-            "crossencoder_checkpoint": "/home2/cye73/results2/arboel/ncbi_disease/2024-05-04_12-20-07-epoch=4-Accuracy=0.90.ckpt"
-        },
-        {
-            "data_path": "/home2/cye73/data_test2/arboel/bc5cdr",
-            "output_path": "/home2/cye73/results2/arboel/bc5cdr",
-            "biencoder_checkpoint": "/home2/cye73/results2/arboel/bc5cdr/2024-05-02_20-56-16-epoch=5-max_acc=85.13.ckpt",
-            "biencoder_indices_path": "/home2/cye73/data_test2/arboel/bc5cdr",
-            "crossencoder_checkpoint": "/home2/cye73/results2/arboel/bc5cdr/2024-05-03_17-06-57-epoch=4-max_acc=0.00.ckpt"
+            "experiment": "bc5cdr_cross",
+            "recall_k": 64,
+            "only_recall": true,
+            "path_to_abbrev": "/home2/cye73/data_test/abbreviations.json",
+            "limit_test_batches": 1,
+            "devices": [
+                0
+            ]
         }
     ]
 }
