@@ -1,13 +1,16 @@
 from bioel.models.krissbert.data.utils import BigBioDataset
-import torch
 import json
+import torch
 import os
 
 
 def train_model(params, model):
 
-    if "device" in params:
+    if isinstance(params["device"], int):  # One gpu
         os.environ["CUDA_VISIBLE_DEVICES"] = str(params["device"])
+        print(f"Set CUDA_VISIBLE_DEVICES to {params['device']}")
+    elif isinstance(params["device"], list):  # several gpus
+        os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, params["device"]))
         print(f"Set CUDA_VISIBLE_DEVICES to {params['device']}")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

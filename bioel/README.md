@@ -40,17 +40,13 @@ create_abbrev(output_dir, all_dataset)
 # Import modules
 from bioel.model import Model_Wrapper
 from bioel.evaluate import Evaluate
-from bioel.model import Model_Wrapper
-from bioel.evaluate import Evaluate
 
 # load model
 krissbert = Model_Wrapper.load_krissbert(
         name="krissbert", params_file="data/params.json",
     )
 krissbert.training() # train
-krissbert.inference() # inference
-
-abbreviations_path = "data/abbreviations.json"
+krissbert.inference() # inferenc
 
 dataset_names = ["ncbi_disease"]
 model_names = ["krissbert"]
@@ -59,6 +55,7 @@ path_to_result = {
         "krissbert": "results/ncbi_disease/ncbi_disease.json"
     }
 }
+abbreviations_path = "data/abbreviations.json"
 
 # Results
 evaluator = Evaluate(dataset_names, model_names, path_to_result, abbreviations_path)

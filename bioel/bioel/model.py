@@ -166,7 +166,7 @@ if __name__ == "__main__":
     print("Start work on krissbert")
     krissbert = Model_Wrapper.load_krissbert(
         name="krissbert",
-        params_file="/home2/cye73/data_test2/krissbert/medmentions_st21pv/params.json",
+        params_file="/home2/cye73/data_test2/krissbert/ncbi_disease/params.json",
     )
     krissbert.training()
     krissbert.inference()
