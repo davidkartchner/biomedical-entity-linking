@@ -13,7 +13,3 @@
 [submodule "NCBITextLib"]
     path = NCBITextLib
     url = https://github.com/ncbi-nlp/NCBITextLib.git
-
-[submodule "pubmed_xml_modified"]
-    path = extract_pubmed_entities/pubmed_xml_modified
-    url = https://github.com/davidkartchner/extract_pubmed_entities/pubmed_xml_modified.git
