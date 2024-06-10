@@ -1,19 +1,19 @@
 [submodule "biogenel"]
     path = biogenel
-    url = git@github.com:davidkartchner/GenBioEL.git
+    url = https://github.com/davidkartchner/GenBioEL.git
 
 [submodule "sapbert"]
     path = sapbert
-    url = git@github.com:davidkartchner/sapbert.git
+    url = https://github.com/davidkartchner/sapbert.git
 
 [submodule "Ab3P"]
     path = Ab3P
-    url = git@github.com:davidkartchner/Ab3P.git
+    url = https://github.com/davidkartchner/Ab3P.git
 
 [submodule "NCBITextLib"]
     path = NCBITextLib
-    url = git@github.com:ncbi-nlp/NCBITextLib.git
+    url = https://github.com/ncbi-nlp/NCBITextLib.git
 
 [submodule "extract_pubmed_entities/pubmed_xml_modified"]
     path = extract_pubmed_entities/pubmed_xml_modified
-    url = git@github.com:davidkartchner/extract_pubmed_entities/pubmed_xml_modified.git
+    url = https://github.com/davidkartchner/extract_pubmed_entities/pubmed_xml_modified.git
