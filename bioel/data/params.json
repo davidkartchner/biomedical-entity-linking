@@ -3,13 +3,13 @@
     "dataset_name": "ncbi_disease",
     "batch_size": 256,
     "max_length": 64,
-    "output_dir": "/home2/cye73/results2/krissbert/ncbi_disease/",
+    "output_dir": "results/",
     "seed": 12345,
     "num_retrievals": 100,
     "index_path": null,
-    "path_to_abbrev": "/home2/cye73/data_test/abbreviations.json",
-    "input_path": "/home2/cye73/results2/krissbert/ncbi_disease/ncbi_disease_embeddings.pickle",
-    "entity_list_names": "/home2/cye73/results2/krissbert/ncbi_disease/ncbi_disease_name_cuis.txt",
-    "output_path": "/home2/cye73/results2/krissbert/ncbi_disease/ncbi_disease.json",
+    "path_to_abbrev": "data/abbreviations.json",
+    "input_path": "results/ncbi_disease_embeddings.pickle",
+    "entity_list_names": "results/ncbi_disease_name_cuis.txt",
+    "output_path": "results/ncbi_disease.json",
     "device": 2
 }

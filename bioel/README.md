@@ -45,12 +45,20 @@ from bioel.evaluate import Evaluate
 
 # load model
 krissbert = Model_Wrapper.load_krissbert(
-        name="krissbert", params_file="data/krissbert/ncbi_disease_st21pv/params.json",
+        name="krissbert", params_file="data/params.json",
     )
 krissbert.training() # train
 krissbert.inference() # inference
 
 abbreviations_path = "data/abbreviations.json"
+
+dataset_names = ["ncbi_disease"]
+model_names = ["krissbert"]
+path_to_result = {
+    "ncbi_disease": {
+        "krissbert": "results/ncbi_disease/ncbi_disease.json"
+    }
+}
 
 # Results
 evaluator = Evaluate(dataset_names, model_names, path_to_result, abbreviations_path)
