@@ -10,3 +10,9 @@
 [submodule "NCBITextLib"]
 	path = NCBITextLib
 	url = git@github.com:ncbi-nlp/NCBITextLib.git
+[submodule "extract_pubmed_entities"]
+	path = extract_pubmed_entities
+	url = git@github.com:davidkartchner/extract_pubmed_entities.git
+[submodule "extract_pubmed_entities/pubmed_xml_modified"]
+	path = extract_pubmed_entities/pubmed_xml_modified
+	url = git@github.com:davidkartchner/pubmed_xml_modified.git
