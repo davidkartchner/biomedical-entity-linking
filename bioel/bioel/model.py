@@ -3,11 +3,13 @@ from bioel.models.arboel.crossencoder.model.CrossEncoderLightningModule import (
     LitCrossEncoder,
 )
 from bioel.models.arboel.biencoder.model.common.params import BlinkParser
+from bioel.models.krissbert.model.model import Krissbert
 import json
 import importlib
 import argparse
 import lightning as L
 import os
+import torch
 
 
 class Model_Wrapper:
@@ -113,8 +115,29 @@ class Model_Wrapper:
         pass
 
     @classmethod
-    def load_krissbert(cls, name, params):
-        pass
+    def load_krissbert(cls, name, params_file, checkpoint_path=None):
+        if isinstance(params_file, str) and os.path.isfile(params_file):
+            with open(params_file, "r") as f:
+                params = json.load(f)
+        elif isinstance(params_file, dict):
+            params = params_file
+        else:
+            raise TypeError("params_file must be a valid file path or a dictionary")
+
+        if checkpoint_path:
+            model = Krissbert(checkpoint_path)
+        else:
+            model = Krissbert(params["model_name_or_path"])
+
+        train_script_path = f"bioel/models/krissbert/train.py"
+        evaluate_script_path = f"bioel/models/krissbert/evaluate.py"
+        return cls(
+            model,
+            name,
+            train_script_path,
+            evaluate_script_path,
+            params,
+        )
 
     @classmethod
     def load_scispacy(cls, name, params):
@@ -140,22 +163,11 @@ class Model_Wrapper:
 
 
 if __name__ == "__main__":
-    print("Start work on biencoder")
-    arboel_biencoder = Model_Wrapper.load_arboel_biencoder(
-        name="arboel_biencoder",
-        params_file="/home2/cye73/data_test2/arboel/bc5cdr/params_biencoder.json",
+    print("Start work on krissbert")
+    krissbert = Model_Wrapper.load_krissbert(
+        name="krissbert",
+        params_file="/home2/cye73/data_test2/krissbert/medmentions_st21pv/params.json",
     )
-    arboel_biencoder.training()
-    arboel_biencoder.inference()
-
-    print("Finish work on biencoder")
-
-    print("Start work on crossencoder")
-    arboel_cross = Model_Wrapper.load_arboel_crossencoder(
-        name="arboel_crossencoder",
-        params_file="/home2/cye73/data_test2/arboel/bc5cdr/params_crossencoder.json",
-    )
-    arboel_cross.training()
-    arboel_cross.inference()
-
-    print("Finish work on crossencoder")
+    krissbert.training()
+    krissbert.inference()
+    print("Finish work on krissbert")

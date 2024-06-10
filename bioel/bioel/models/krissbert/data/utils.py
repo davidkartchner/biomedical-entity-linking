@@ -15,6 +15,7 @@ from bioel.utils.bigbio_utils import (
     dataset_to_documents,
     get_left_context,
     get_right_context,
+    add_deabbreviations,
 )
 from bioel.utils.dataset_consts import (
     DATASET_NAMES,
@@ -41,7 +42,7 @@ class Mention:
 
 @dataclass
 class ContextualMention:
-    mention: str # text
+    mention: str  # text
     cuis: List[str]
     ctx_l: str
     ctx_r: str
@@ -132,16 +133,25 @@ class BigBioDataset(torch.utils.data.Dataset):
         self,
         dataset_name: str,
         splits: List[str],
-        resolve_abbreviations: bool = True,
-        abbreviations_dict_path="../../../../data/abbreviations.json",
+        abbreviations_path=None,
     ):
         self.dataset_name = dataset_name
         self.data = load_bigbio_dataset(dataset_name)
         self.splits = splits
+        self.abbreviations_path = abbreviations_path
         self.name_to_cuis = {}
 
         exclude = CUIS_TO_EXCLUDE[dataset_name]
         remap = CUIS_TO_REMAP[dataset_name]
+
+        if self.abbreviations_path:
+            self.data = add_deabbreviations(
+                dataset=self.data, path_to_abbrev=self.abbreviations_path
+            )
+            print("Resolved abbreviations")
+        else:
+            print("No abbreviations dictionary found.")
+
         df = dataset_to_df(
             self.data, cuis_to_exclude=exclude, entity_remapping_dict=remap
         )
@@ -149,36 +159,25 @@ class BigBioDataset(torch.utils.data.Dataset):
         df["end"] = df["offsets"].map(lambda x: x[-1][-1])
         df = df[df.split.isin(splits)]
         print(dataset_name, splits, df.split.unique())
+
         self.df = df
 
         self.documents = dataset_to_documents(self.data)
-
-        if resolve_abbreviations:
-            if abbreviations_dict_path is not None:
-                self.abbreviations = ujson.load(open(abbreviations_dict_path))
-                self.df.text = self.df[["document_id", "text"]].apply(
-                    lambda x: resolve_abbreviation(
-                        doc_id=x.iloc[0],
-                        texts=x.iloc[1],
-                        abbreviations=self.abbreviations,
-                    ),
-                    axis=1,
-                )
-                print("Resolved abbreviations")
-            else:
-                print(
-                    "No abbreviations dictionary found.  Setting resolve_abbreviations to False"
-                )
-        # self.abbreviations_dict =
 
         self._post_init()
 
     def _df_to_contextual_mentions(self, max_length: int = 64):
         self.df["ctx_l"] = self.df[["document_id", "start"]].progress_apply(
-            lambda x: get_left_context(self.documents[x.iloc[0]], x.iloc[1], strip=True), axis=1
+            lambda x: get_left_context(
+                self.documents[x.iloc[0]], x.iloc[1], strip=True
+            ),
+            axis=1,
         )
         self.df["ctx_r"] = self.df[["document_id", "end"]].progress_apply(
-            lambda x: get_right_context(self.documents[x.iloc[0]], x.iloc[1], strip=True), axis=1
+            lambda x: get_right_context(
+                self.documents[x.iloc[0]], x.iloc[1], strip=True
+            ),
+            axis=1,
         )
 
         self.df = self.df.rename(
@@ -224,6 +223,7 @@ def split_dataset(docs: List, split_path_prefix: str) -> Dict[str, List]:
         split = id_to_split[doc.id]
         dataset[split].append(doc)
     return dataset
+
 
 class PreprocessedDataset(torch.utils.data.Dataset):
     def __init__(self, dataset_path: str) -> None:
