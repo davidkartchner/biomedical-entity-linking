@@ -43,19 +43,20 @@ from bioel.evaluate import Evaluate
 
 # load model
 krissbert = Model_Wrapper.load_krissbert(
-        name="krissbert", params_file="data/params.json",
+        name="krissbert", params_file=params,
     )
+# Look at data/params.json for more information about the parameters
 krissbert.training() # train
-krissbert.inference() # inferenc
+krissbert.inference() # inference
 
+abbreviations_path = "data/abbreviations.json"
 dataset_names = ["ncbi_disease"]
 model_names = ["krissbert"]
 path_to_result = {
     "ncbi_disease": {
-        "krissbert": "results/ncbi_disease/ncbi_disease.json"
+        "krissbert": "results/ncbi_disease.json"
     }
 }
-abbreviations_path = "data/abbreviations.json"
 
 # Results
 evaluator = Evaluate(dataset_names, model_names, path_to_result, abbreviations_path)
@@ -65,6 +66,9 @@ evaluator.evaluate()
 evaluator.plot_results()
 ```
 
+## ArboEL
+
+ArboEL operates in two stages: First, you need to train the biencoder (`load_arboel_biencoder`). Then, you use the candidate results from the biencoder to train the crossencoder (`load_arboel_crossencoder`) and perform evaluation with the crossencoder.
 
 
 <!-- TODO: Add quickstart, examples -->

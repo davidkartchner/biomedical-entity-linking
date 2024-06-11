@@ -5,6 +5,7 @@ from bioel.models.arboel.biencoder.model.BiEncoderLightningModule import LitArbo
 from datetime import datetime
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
+import wandb
 from lightning.pytorch.utilities import rank_zero_only
 import lightning.pytorch as L
 from bioel.ontology import BiomedicalOntology
@@ -55,8 +56,10 @@ def train_model(params, model):
         verbose=True,
     )
 
+    if wandb.run is None:
+        wandb.init()
     wandb_logger = WandbLogger(
-        project=params["experiment"] if params["experiment"] else "Experiment"
+        project=params["experiment"] if params["experiment"] else wandb.run.name
     )
     trainer = L.Trainer(
         num_sanity_val_steps=0,
