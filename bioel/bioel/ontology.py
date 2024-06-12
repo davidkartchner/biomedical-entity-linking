@@ -179,64 +179,51 @@ class BiomedicalOntology:
         entities = {}
         types = []
 
-        logger.info(f"Reading medic from {filepath}")
-
-        # Attributes of the medic ontology
-        key_dict = [
-            "DiseaseName",
-            "DiseaseID",
-            "AltDiseaseIDs",
-            "Definition",
-            "ParentIDs",
-            "TreeNumbers",
-            "ParentTreeNumbers",
-            "Synonyms",
-            "SlimMappings",
-        ]
+        logger.info(f"Reading entrez from {filepath}")
 
         # Open the TSV file
-        with open(filepath, newline="") as tsvfile:
-            reader = csv.reader(tsvfile, delimiter="\t")
-
-            counter = 0  # First entity in the tsv file appears in line 29
-
-            ontology = []
-            for row in reader:
-                dict = {}
-                if counter > 28:
-                    for i, elements in enumerate(row):
-                        dict[key_dict[i]] = elements
-                    ontology.append(dict)
-                counter += 1
-
-        for element in ontology:
-            equivalant_cuis = [element["DiseaseID"]]
-            alt_ids = (
-                element["AltDiseaseIDs"].split("|") if element["AltDiseaseIDs"] else []
-            )
+        medic = pd.read_csv(
+            filepath,
+            delimiter="\t",
+            na_filter=False,
+            usecols=[
+                "Disease_Name",
+                "DiseaseID",
+                "Alt_Disease_IDs",
+                "Definition",
+                "Parent_IDs",
+                "Tree_Numbers",
+                "Parent_Tree_Numbers",
+                "Synonyms",
+                "Slim_Mappings",
+            ],
+        )
+        for index, row in medic.iterrows():
+            equivalant_cuis = [row["DiseaseID"]]
+            alt_ids = row["AltDiseaseIDs"].split("|") if row["AltDiseaseIDs"] else []
             for alt_id in alt_ids:
                 if alt_id not in equivalant_cuis and alt_id[:2] != "DO":
                     equivalant_cuis.append(alt_id)
 
             entity = BiomedicalEntity(
-                cui=element["DiseaseID"],
-                name=element["DiseaseName"],
-                types=["Disease"],
-                aliases=element["Synonyms"],
-                definition=element["Definition"],
+                cui=row["DiseaseID"],
+                name=row["DiseaseName"],
+                types="Disease",
+                aliases=row["Synonyms"],
+                definition=row["Definition"],
+                taxonomy=row["tax_id"],
                 equivalant_cuis=equivalant_cuis,
             )
 
-            if element["DiseaseID"] in entities:
+            if row["geneid"] in entities:
                 logger.warning(
-                    f"Duplicate CUI {element['DiseaseID']} found in ontology.  Skipping."
+                    f"Duplicate CUI {row['geneid']} found in ontology.  Skipping."
                 )
                 continue
 
-            entities[element["DiseaseID"]] = entity
+            entities[row["geneid"]] = entity
 
-            types.append("Disease")
-
+            types.append(row["type_of_gene"])
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
 
     @classmethod
