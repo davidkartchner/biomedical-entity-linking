@@ -11,6 +11,8 @@ import json
 import pandas as pd
 import ujson
 import warnings
+from itertools import combinations
+from collections import defaultdict
 
 from torch.utils.data import Dataset, DataLoader
 from bioel.utils.bigbio_utils import (
@@ -22,6 +24,8 @@ from bioel.utils.bigbio_utils import (
     resolve_abbreviation,
 )
 
+from transformers import AutoTokenizer
+
 from bioel.ontology import BiomedicalOntology
 from bioel.logger import setup_logger
 
@@ -31,35 +35,65 @@ logger = setup_logger()
 """
 Generate Pretraining Data for SAPBERT from the UMLS Ontology
 """
-def gen_pairs(input_list: List) -> List:
+def generate_positive_pairs(alias_mapping: dict, max_pairs_per_cui: int = 50) -> List[str]:
     """
-    Generate all possible pairs from a list of items.
+    Generate pretraining data from UMLS for the SAPBERT Contrastive Learning.
     """
-    return list(itertools.combinations(input_list, r = 2))
-
-def generate_pretraining_data(ontology: BiomedicalOntology):
-    """
-    Generate pretraining data from UMLS for the SAPBERT model.
-    """
-    
-
-    pos_pairs = []
-    for k, v in tqdm(ontology.entities.items(), desc = "Generating pretraining data for SAPBERT"):
-        pairs = gen_pairs(v.aliases)
-        if len(pairs) > 50: # If > 50 pairs, sample 50 pairs
-            pairs = random.sample(pairs, 50)
+    positive_pairs = []
+    for cui, entity in tqdm(alias_mapping.items(), desc = "Generating pretraining data for SAPBERT"):
+        if isinstance(entity, list):
+            pairs = list(combinations(entity, r = 2))
+        else:
+            pairs = list(combinations(entity.aliases, r = 2))
+        if len(pairs) > max_pairs_per_cui: # If > 50 pairs, sample 50 pairs
+            pairs = random.sample(pairs, k=max_pairs_per_cui)
+        
         for p in pairs:
-            print(k, p[0], p[1])
-            line = str(k) + "||" + p[0] + "||" + p[1]
-            pos_pairs.append(line)
-    
-    # Save the pos_pairs into a .txt file
-    with open('./training_file_umls_2022AA_en_uncased_no_dup_pairwise_pair_th50.txt', 'w') as file:
-        for pair in pos_pairs:
-            file.write(pair + '\n')
-    
-    return pos_pairs
+            if p[0] and p[1]:
+                line = str(cui) + "||" + p[0].lower() + "||" + p[1].lower()
+                
+                positive_pairs.append(line)
+    return positive_pairs
 
+class DictionaryDataset:
+    """
+    A class used to load dictionary data
+    """
+
+    def __init__(self, dictionary_path):
+        """
+        Parameters
+        ----------
+        dictionary_path : str
+            The path of the dictionary
+        draft : bool
+            use only small subset
+        """
+        logger.info("DictionaryDataset! dictionary_path={}".format(dictionary_path))
+        self.data = self.load_data(dictionary_path)
+
+    def load_data(self, dictionary_path):
+        name_cui_map = {}
+        data_dict = defaultdict(list)
+        with open(dictionary_path, mode="r", encoding="utf-8") as f:
+            lines = f.readlines()
+            for line in tqdm(lines):
+                line = line.strip()
+                if line == "":
+                    continue
+                cui, name = line.split("||")
+                name = name.lower()
+                if cui.lower() == "cui-less":
+                    continue
+
+                data_dict[name].append(cui)
+                # data.append((name,cui))
+
+        # LOGGER.info("concerting loaded dictionary data to numpy array...")
+        # data = np.array(data)
+        data = [(name, "|".join(cuis)) for name, cuis in data_dict.items()]
+        return data
+    
 class SapBertBigBioDataset(Dataset):
     def __init__(
         self,
@@ -87,9 +121,10 @@ class SapBertBigBioDataset(Dataset):
         self._data_to_flat_instances()
 
 
+
     def _data_to_flat_instances(self):
         """
-        Convert dataset into flat set of examples to use with dataloader
+        Convert dataset into flat set of positive Examples to use with dataloader
         """
         df = dataset_to_df(
             self.data,
@@ -103,6 +138,8 @@ class SapBertBigBioDataset(Dataset):
             )
         self.flat_instances = df.to_dict(orient="records")
 
+    
+
     def __len__(self):
         return len(self.flat_instances)
 
@@ -110,13 +147,13 @@ class SapBertBigBioDataset(Dataset):
         return self.flat_instances[idx]
 
 
-def sapbert_collate_fn(batch):
-    mentions = [x["text"] for x in batch]
-    # labels = [x["cuis"] for x in batch]
-    labels = [x["db_ids"] for x in batch]
-    metadata = batch
+# def sapbert_collate_fn(batch):
+#     mentions = [x["text"] for x in batch]
+#     # labels = [x["cuis"] for x in batch]
+#     labels = [x["db_ids"] for x in batch]
+#     metadata = batch
 
-    return mentions, labels, metadata
+#     return mentions, labels, metadata
 
 
 class MetricLearningDataset_pairwise(Dataset):
@@ -124,16 +161,18 @@ class MetricLearningDataset_pairwise(Dataset):
     Candidate Dataset for:
         query_tokens, candidate_tokens, label
     """
-    def __init__(self, path, tokenizer): #d_ratio, s_score_matrix, s_candidate_idxs):
-        with open(path, 'r') as f:
-            lines = f.readlines()
+    def __init__(
+            self, 
+            training_pairs: List[str], 
+            tokenizer): #d_ratio, s_score_matrix, s_candidate_idxs):
         self.query_ids = []
         self.query_names = []
-        for line in lines:
+        for i, line in tqdm(enumerate(training_pairs), desc="Loading training pairs"):
             line = line.rstrip("\n")
-            query_id, name1, name2 = line.split("||")
-            self.query_ids.append(query_id)
-            self.query_names.append((name1, name2))
+            if (len(line.split("||")) == 3):
+                query_id, name1, name2 = line.split("||")
+                self.query_ids.append(query_id)
+                self.query_names.append((name1, name2))
         self.tokenizer = tokenizer
         self.query_id_2_index_id = {k: v for v, k in enumerate(list(set(self.query_ids)))}
     
@@ -196,15 +235,18 @@ if __name__ == "__main__":
     dataset = SapBertBigBioDataset(
         path_to_abbreviation_dict="/home/pbathala3/entity_linking/biomedical-entity-linking/bioel/bioel/utils/solve_abbreviation/abbreviations.json"
     )
-    dataloader = DataLoader(dataset, collate_fn=sapbert_collate_fn, batch_size=64)
-    for i, batch in enumerate(tqdm(dataloader)):
-        if i < 3:
-            print(batch)
+    #dataloader = DataLoader(dataset, collate_fn=sapbert_collate_fn, batch_size=1)
+    # for i, batch in enumerate(tqdm(dataloader)):
+    #     if i < 1:
+    #         print(batch)
     
-    # ontology_config = {
-    #     "filepath": "/mitchell/entity-linking/2022AA/META/",
-    #     "name": "UMLS",
-    #     "abbrev": None,
-    # }
-    # ontology = BiomedicalOntology.load_umls(**ontology_config)
-    # print(generate_pretraining_data(ontology))
+    ontology_config = {
+        "filepath": "/mitchell/entity-linking/2022AA/META/",
+        "name": "UMLS",
+        "abbrev": None,
+    }
+    ontology = BiomedicalOntology.load_umls(**ontology_config)
+    pos_pairs = generate_positive_pairs(ontology.entities)
+    for i, pair in enumerate(tqdm(pos_pairs)):
+        if i < 1:
+            print(pair)
