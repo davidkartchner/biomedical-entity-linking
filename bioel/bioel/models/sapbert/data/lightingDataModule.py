@@ -22,7 +22,7 @@ from torch.utils.data import DataLoader
 # from bioel.models.arboel.data.data_utils import process_mention_dataset
 # from bioel.models.arboel.model.eval_cluster_linking import filter_by_context_doc_id
 from bioel.ontology import BiomedicalOntology
-from bioel.models.sapbert.data.utils import generate_positive_pairs, MetricLearningDataset, MetricLearningDataset_pairwise, SapBertBigBioDataset
+from bioel.models.sapbert.data.utils import generate_positive_pairs, MetricLearningDataset, MetricLearningDataset_pairwise, SapBertBigBioDataset, SapBertDictionaryDataset
 
 from bioel.utils import bigbio_utils
 
@@ -72,25 +72,10 @@ class SapbertDataModule(L.LightningDataModule):
             self.positive_pairs = generate_positive_pairs(ontology.entities)
         elif self.hparams.mode == "finetune":
             logger.info(f"Loading the BigBio Dataset {self.hparams.train_dir}")
-            dataset = SapBertBigBioDataset(
-                dataset_name=self.hparams.train_dir, 
-                resolve_abbreviations=self.hparams.resolve_abbreviations,
-                path_to_abbreviation_dict=self.hparams.path_to_abbreviation_dict,   
-            )
-            alias_mapping = {}
-            for instance in tqdm(dataset):
-                print(instance)
-                mention = instance["text"].lower()
-                for cui in instance['db_ids']:
-                    if cui not in alias_mapping:
-                        alias_mapping[cui] = set([mention])
-                    else:
-                        alias_mapping[cui].add(mention)
-            
-            for key, value in alias_mapping.items():
-                alias_mapping[key] = list(value)
-            
-            self.positive_pairs = generate_positive_pairs(alias_mapping)
+
+            curie_dict = SapBertDictionaryDataset(self.hparams.train_dir).data
+            self.positive_pairs = generate_positive_pairs(curie_dict)
+
         else:
             raise ValueError(f"Invalid mode: {self.hparams.mode}")
     

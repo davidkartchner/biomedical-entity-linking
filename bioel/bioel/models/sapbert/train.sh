@@ -2,18 +2,18 @@
 
 # Set your desired parameters
 
-MODEL_DIR="/home/pbathala3/entity_linking/biomedical-entity-linking/bioel/bioel/models/sapbert/good-rain-35"
-#TRAIN_DIR="/mitchell/entity-linking/2017AA/META/"
-TRAIN_DIR="medmentions_full"
-OUTPUT_DIR="/home/pbathala3/entity_linking/biomedical-entity-linking/bioel/bioel/models/sapbert/"
+MODEL_DIR="microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext"
+TRAIN_DIR="/mitchell/entity-linking/2017AA/META/"
+#TRAIN_DIR="/home/pbathala3/entity_linking/biomedical-entity-linking/bioel/bioel/models/sapbert/data/data_bis/bc5cdr_aliases.txt"
+OUTPUT_DIR="/home/pbathala3/entity_linking/biomedical-entity-linking/bioel/bioel/models/sapbert/pretrained_model/"
 MAX_LENGTH=25
 BATCH_SIZE=256
-NUM_EPOCHS=20
+NUM_EPOCHS=1
 LEARNING_RATE=2e-5
 CHECKPOINT_STEP=999999
 
 
-python train.py \
+CUDA_VISIBLE_DEVICES=1 python train.py \
     --model_dir $MODEL_DIR \
     --train_dir $TRAIN_DIR \
     --output_dir $OUTPUT_DIR \
@@ -32,6 +32,6 @@ python train.py \
     --miner_margin 0.2 \
     --agg_mode "cls" \
     --project "SAPBERT" \
-    --mode "finetune"
+    --mode "pretrain"
 
 

@@ -79,6 +79,8 @@ class DictionaryDataset:
             lines = f.readlines()
             for line in tqdm(lines):
                 line = line.strip()
+                if not line or len(line.split("||")) != 2:
+                    continue
                 if line == "":
                     continue
                 cui, name = line.split("||")
@@ -93,6 +95,39 @@ class DictionaryDataset:
         # data = np.array(data)
         data = [(name, "|".join(cuis)) for name, cuis in data_dict.items()]
         return data
+
+class SapBertDictionaryDataset(Dataset):
+    def __init__(self, dictionary_path: str):
+        logger.info("Loading from the Alias Mapping of the Dataset")
+        self.data = self.read_examples(dictionary_path)
+
+    
+    def read_examples(self, dictionary_path):
+        """
+        Read examples from the file
+        """
+        with open(dictionary_path, "r") as f:
+            lines = f.read().split("\n")
+        
+        # Construt the UMLS Dict for finetuning the model
+        umls_dict = {}
+        for line in tqdm(lines, desc="Reading examples from the file"):
+            if not line or len(line.split("||")) != 2:
+                continue
+            cui, name = line.split("||")
+            name = name.lower()
+            if cui in umls_dict:
+                umls_dict[cui].add(name)
+            else:
+                umls_dict[cui] = set([name])
+        
+        for key, value in umls_dict.items():
+            umls_dict[key] = list(value)
+        
+        return umls_dict
+        
+
+        
     
 class SapBertBigBioDataset(Dataset):
     def __init__(

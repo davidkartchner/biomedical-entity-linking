@@ -227,7 +227,9 @@ def main(config):
 
         # Save the model Last Epoch
         if epoch == config["epoch"]:
-            model_wrapper.save_model(os.path.join(config["output_dir"], wandb.run.name))
+            if not os.path.exists(config["output_dir"]):
+                os.makedirs(config["output_dir"])
+            model_wrapper.save_model(os.path.join(config["output_dir"]))
     
     end = time.time()
     training_time = end - start

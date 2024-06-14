@@ -79,6 +79,7 @@ def main(args):
         topk=args.topk,
         dict_cache_filepath=dict_cache_filepath,
         debug=args.debug,
+        resolve_abbreviations=resolve_abbreviations,
     )
 
     LOGGER.info(f"Saving results to {preds_save_path}")

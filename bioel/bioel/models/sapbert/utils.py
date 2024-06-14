@@ -119,6 +119,7 @@ def sapbert_predict(
     dict_cache_filepath=None,
     db_name: str = "UMLS",
     debug=False,
+    resolve_abbreviations = False,
 ):
     """
     Make predictions for SapBERT given a particular dict of medical concepts
@@ -194,6 +195,8 @@ def sapbert_predict(
             candidates = [x[1].split("|") for x in np_candidates]
             metadata[i]["candidates"] = candidates
             metadata[i]["candidates_metadata"] = candidates_extra
+            if resolve_abbreviations:
+                metadata[i]["mention_id"] = metadata[i]["mention_id"] + ".abbr_resolved"
             if len(results) == 0 and debug:
                 LOGGER.debug(metadata)
         results.extend(metadata)
