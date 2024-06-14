@@ -3,7 +3,7 @@ import ujson
 import warnings
 from collections import defaultdict
 import pandas as pd
-
+#from bigbio.dataloader import BigBioConfigHelpers
 import json
 import joblib
 import numpy as np
@@ -14,8 +14,8 @@ from tqdm.auto import tqdm
 tqdm.pandas()
 
 from datasets import load_dataset
-from bioel.bigbio_utils import dataset_to_documents, dataset_to_df, resolve_abbreviation
-from bioel.dataset_consts import CUIS_TO_REMAP, CUIS_TO_EXCLUDE, DATASET_NAMES
+from bioel.utils.bigbio_utils import dataset_to_documents, dataset_to_df, resolve_abbreviation, load_bigbio_dataset
+from bioel.dataset_consts import CUIS_TO_REMAP, CUIS_TO_EXCLUDE, VALIDATION_DOCUMENT_IDS
 from bioel.ontology import BiomedicalOntology
 from sklearn.feature_extraction.text import TfidfVectorizer
 
@@ -39,16 +39,34 @@ def cuis_to_aliases(ontology: BiomedicalOntology , save_dir: str, dataset_name: 
     """
     # Create the directory if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
+    import re
 
     file_path = os.path.join(save_dir, f"{dataset_name}_aliases.txt")
     with open(file_path, "w", encoding='utf-8') as file:
         for cui, entity in ontology.entities.items():
-            file.write(f"{cui}||{entity.name}\n")
-            if entity.aliases :
-                words = entity.aliases.split(';')
-                for word in words:
-                    word = word.strip()
-                    file.write(f"{cui}||{word}\n")
+            file.write(f"{cui}||{entity.name}\n")                               
+            if len(entity.aliases) != 0 :
+                if isinstance(entity.aliases, list):
+                    for word in entity.aliases:
+                        if word is not None:
+                            #print(word)
+                            word = word.strip()
+                            file.write(f"{cui}||{word}\n")
+                else:
+                    #words = entity.aliases.split('; , ')
+                    words = re.split('[;|]', entity.aliases)
+                    for word in words:
+                        word = word.strip()
+                        file.write(f"{cui}||{word}\n")
+            if entity.equivalant_cuis :
+                for eqcui in entity.equivalant_cuis:
+                    if eqcui != entity.cui:
+                        file.write(f"{eqcui}||{entity.name}\n")
+                        if entity.aliases :
+                            words = re.split('[;|]', entity.aliases)
+                            for word in words:
+                                word = word.strip()
+                                file.write(f"{eqcui}||{word}\n")
     
     return(file_path)
 
@@ -199,6 +217,10 @@ def create_training_files(
     resolve_abbrevs: bool=True,
 ):
     # Get contextualized mentions
+    #print("deduplicated here", deduplicated)
+    test_docs = deduplicated[deduplicated['split']=='validation']
+    print(test_docs)
+
     df = contextualize_mentions(
         document_dict,
         deduplicated,
@@ -251,7 +273,6 @@ def create_training_files(
     # df.to_pickle(os.path.join(save_dir, "processed_mentions.pickle"))
 
     # Write data files to pickle
-
     for split in df.split.unique():
         subset = df.query("split == @split")
         split_name = split
@@ -309,7 +330,7 @@ def create_target_kb_dict(file_path, dataset_name):
     return processed_dict
 
 
-def data_preprocess(dataset_name: str, save_dir: str, ontology: BiomedicalOntology, resolve_abbrevs=False):
+def data_preprocess(dataset_name: str, save_dir: str, ontology: BiomedicalOntology, path_to_abbrev: str, resolve_abbrevs=False):
 
     if not resolve_abbrevs:
         save_dir = os.path.join(save_dir, "no_abbr_res/")
@@ -322,7 +343,8 @@ def data_preprocess(dataset_name: str, save_dir: str, ontology: BiomedicalOntolo
     create_tfidf_ann_index(f"file_dumps/{dataset_name}", mappings_dir)
 
     # read data
-    dataset = load_dataset(f"bigbio/{dataset_name}", name=f"{dataset_name}_bigbio_kb")
+    #dataset = load_dataset(f"bigbio/{dataset_name}", name=f"{dataset_name}_bigbio_kb")
+    dataset = load_bigbio_dataset(f"{dataset_name}")
 
     target_kb_dict = create_target_kb_dict(save_dir, dataset_name)
     # create target_kb.json
@@ -331,7 +353,7 @@ def data_preprocess(dataset_name: str, save_dir: str, ontology: BiomedicalOntolo
         target_kb.write(str_target)
 
     if resolve_abbrevs:
-        with open("abbreviations.json") as json_file:
+        with open(path_to_abbrev) as json_file:
             abbreviations_dict = ujson.load(json_file)
     else:
         abbreviations_dict = None
@@ -339,13 +361,21 @@ def data_preprocess(dataset_name: str, save_dir: str, ontology: BiomedicalOntolo
     entity_remapping_dict = CUIS_TO_REMAP[dataset_name]
     entities_to_exclude = CUIS_TO_EXCLUDE[dataset_name]
 
+    if dataset_name in VALIDATION_DOCUMENT_IDS:
+        validation_pmids = VALIDATION_DOCUMENT_IDS[dataset_name]
+    else:
+        validation_pmids = None
+
     deduplicated = dataset_to_df(
         dataset,
         entity_remapping_dict=entity_remapping_dict,
         cuis_to_exclude=entities_to_exclude,
+        val_split_ids=validation_pmids,
     )
     deduplicated["mention"] = deduplicated["text"]
 
+    for split in deduplicated.split.unique():
+        print(split)
     split_docs = dataset_to_documents(dataset)
 
     # create source file

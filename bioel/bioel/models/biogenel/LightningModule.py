@@ -5,6 +5,7 @@ import numpy as np
 from tqdm import tqdm
 import pickle
 import argparse
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -20,7 +21,7 @@ from bioel.models.biogenel.trainer import modifiedSeq2SeqTrainer
 from bioel.models.biogenel.trie import Trie
 from bioel.models.biogenel.utils import reform_input
 from bioel.models.biogenel.LightningDataModule import BioGenELDataModule
-from fairseq_beam import (SequenceGenerator,PrefixConstrainedBeamSearch,PrefixConstrainedBeamSearchWithSampling)
+from bioel.models.biogenel.fairseq_beam import (SequenceGenerator,PrefixConstrainedBeamSearch,PrefixConstrainedBeamSearchWithSampling)
 import copy
 import json
 import ujson
@@ -28,10 +29,11 @@ import ujson
 from bioel.ontology import BiomedicalOntology
 
 class BioGenElLightningModule(pl.LightningModule):
-    def __init__(self, config, datamodule: BioGenELDataModule):
+    def __init__(self, config, datamodule: Optional[BioGenELDataModule] = None):
         super().__init__()
         self.config = config
-        self.datamodule = datamodule
+        if datamodule:
+            self.datamodule = datamodule
         self.trie = None  # Initialize trie
         config.max_steps = config.max_steps // config.gradient_accumulate
         config.save_steps = config.max_steps
@@ -145,6 +147,8 @@ class BioGenElLightningModule(pl.LightningModule):
 
             
     def trainer_choice(self):
+        if self.config.preprocess_data:
+            self.datamodule.prepare_data()
         self.datamodule.setup()
         train_dataset = self.datamodule.train_dataloader().dataset
         if self.config.unlikelihood_loss:
@@ -183,16 +187,24 @@ class BioGenElLightningModule(pl.LightningModule):
         self.evaluate_choice()
         self.on_evaluate()
         self.apply_fairseq_beam_search()
+    
+    def init_datamodule(self, datamodule = BioGenELDataModule):
+        self.datamodule = datamodule
 
     def evaluate_choice(self):
+        if self.config.preprocess_data:
+            self.datamodule.prepare_data()
         self.datamodule.setup()
-
+        dataframe = self.datamodule.deduplicated
+        
         if self.config.testset:
             print('eval on test set')
             self.eval_dataset = self.datamodule.test_dataloader().dataset
+            self.eval_docs = dataframe[dataframe['split'] == 'test']
         else:
             print('eval on develop set')
             self.eval_dataset = self.datamodule.dev_dataloader().dataset
+            self.eval_docs = dataframe[dataframe['split'] == 'validation']
     
     def on_evaluate(self):
         print("loading cui2str dictionary....")
@@ -322,6 +334,9 @@ class BioGenElLightningModule(pl.LightningModule):
         results = list()
         cui_results = list()
         results_score = list()
+        text = list()
+        candidates_metadata = list()
+        output = list()
 
         input_ids = []
         decoder_input_ids = []
@@ -361,21 +376,75 @@ class BioGenElLightningModule(pl.LightningModule):
                 for ba, beam_sent in enumerate(result_tokens):
                     result = []
                     cui_result = []
+                    candidates = []
                     for be, sent in enumerate(beam_sent):
                         if self.config.prefix_mention_is:
                             result.append(self.tokenizer.decode(sent[len(decoder_input_ids[0]):], skip_special_tokens=True))
                         else:
                             result.append(self.tokenizer.decode(sent, skip_special_tokens=True))
                     
-                    for r in result:
-                        if r.strip(' ') in self.str2cui:
-                            cui_result.append(self.str2cui[r.strip(' ')])
+                    for idx, r in enumerate(result):
+                        if r.strip(" ") in self.str2cui:
+                            if idx == 0:
+                                text.append(r.strip(" "))
+                            cui_result.append(self.str2cui[r.strip(" ")])
+                            candidates.append(
+                                {"text": r.strip(" "), "db_id": self.str2cui[r.strip(" ")]}
+                            )
                         else:
-                            cui_result.append(r)
+                            print(f"Candidate not found in str2cui: {r}")
+
+                            if (
+                                "MESH" in r
+                                or "mesh" in r
+                                or "omim" in r
+                                or "OMIM" in r
+                                or "umls" in r
+                                or "UMLS" in r
+                                or "NCBIGene" in r
+                                or "NCBI" in r
+                            ):
+                                if idx == 0:
+                                    text.append(r)
+                                cui_result.append(r)
+                                candidates.append({"text": r.strip(" "), "db_id": r})
+                            else:
+                                continue
+
+                    if len(cui_result) == 0:
+                        continue
 
                     cui_results.append(cui_result)
                     results.append(result)
                     results_score.append(posi_scores)
+                    candidates_metadata.append(candidates)
+                    if 'deabbreviated_text' in self.eval_docs:
+                        output.append(
+                            {
+                                "document_id": self.eval_docs['document_id'].iloc[i],
+                                "offsets": self.eval_docs['offsets'].iloc[i],
+                                "text": self.eval_docs['text'].iloc[i],
+                                "type": self.eval_docs['type'].iloc[i],
+                                "db_ids": list(self.cui_labels[i]),
+                                "split": self.eval_docs['split'].iloc[i],
+                                "deabbreviated_text":self.eval_docs['deabbreviated_text'].iloc[i],
+                                "mention_id": self.eval_docs['mention_id'].iloc[i] + ".abbr_resolved",
+                                "candidates": cui_result,
+                                "candidates_metadata": candidates,
+                            })
+                    else:
+                        output.append(
+                        {
+                            "document_id": self.eval_docs['document_id'].iloc[i],
+                            "offsets": self.eval_docs['offsets'].iloc[i],
+                            "text": self.eval_docs['text'].iloc[i],
+                            "type": self.eval_docs['type'].iloc[i],
+                            "db_ids": list(self.cui_labels[i]),
+                            "split": self.eval_docs['split'].iloc[i],
+                            "mention_id": self.eval_docs['mention_id'].iloc[i],
+                            "candidates": cui_result,
+                            "candidates_metadata": candidates,
+                        })
                     # print(self.tokenizer.decode(input_ids[0], skip_special_tokens=True))
                     # print(posi_scores)
                     # print(result)
@@ -407,6 +476,9 @@ class BioGenElLightningModule(pl.LightningModule):
             f.write(self.config.model_load_path + '\n')
             f.write('Top1 Precision:\t'+str(count_top1/(i+1))+'\n')
             f.write('Top5 Precision:\t'+str(count_top5/(i+1))+'\n\n')
+
+        with open(os.path.join(self.config.model_load_path, 'output.json'), 'w') as f:
+            f.write(ujson.dumps(output, indent=2))
         
         if self.config.testset:
 
@@ -531,21 +603,5 @@ if __name__ == '__main__':
     parser.add_argument('-prefix_mention_is', action='store_true',
                         help='whether only finetune encoder')
     parser.add_argument('-rdrop', type=float, default=0.0)
-
-
-
-    config = parser.parse_args()
-
-    tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
-    dm = BioGenELDataModule(tokenizer, 
-                            save_data_dir=f"{config.dataset_path}/", 
-                            dataset_name = "bc5cdr", 
-                            ontology = BiomedicalOntology.load_mesh("/mitchell/entity-linking/2017AA/META/"),
-                            prefix_mention_is=True,
-                            evaluate=True,
-                            resolve_abbrevs=False,
-                            preprocess_data = False,
-                            batch_size = 1)
-    
-    model = BioGenElLightningModule(config, dm)
-    model.evaluate()
+    parser.add_argument('-preprocess_data', type=bool, default = False,
+                        help='preprocess the data or not')
