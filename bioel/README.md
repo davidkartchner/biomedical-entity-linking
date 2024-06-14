@@ -68,7 +68,14 @@ evaluator.plot_results()
 
 ## ArboEL
 
+
 ArboEL operates in two stages: First, you need to train the biencoder (`load_arboel_biencoder`). Then, you use the candidate results from the biencoder to train the crossencoder (`load_arboel_crossencoder`) and perform evaluation with the crossencoder.
 
+
+## BioBART/BioGenEL
+
+BioBART and BioGenEL share the same entity linking module: 
+In order to finetune from BioBART set the "model_load_path" in the .json config file to "GanjinZero/biobart-v2-large", it will load the pretrained weights from HuggingFace.
+In order the finetune from BioGenEL's Knowledge base guided pretrained weights, you first must download the pretrained weights from this link: https://drive.google.com/file/d/1TqvQRau1WPYE9hKfemKZr-9ptE-7USAH/view?usp=sharing and then set the "model_load_path" in the .json config file to the path where you stored the pretrained weights.
 
 <!-- TODO: Add quickstart, examples -->
