@@ -3,7 +3,6 @@ import sys
 import ujson
 
 
-
 from utils import (
     sapbert_predict,
     parse_args_bigbio,
@@ -23,6 +22,7 @@ from bioel.models.sapbert.model.model_wrapper import Model_Wrapper
 
 LOGGER = logging.getLogger()
 
+
 def sapbert_collate_fn(batch):
     mentions = [x["text"] for x in batch]
     # labels = [x["cuis"] for x in batch]
@@ -31,17 +31,16 @@ def sapbert_collate_fn(batch):
 
     return mentions, labels, metadata
 
+
 def main(args):
 
     # Get the Alias from the Big Bio dataset into a dictionary
     eval_dictionary = load_dictionary(dictionary_path=args.dictionary_path)
-    
+
     if args.abbreviations_path is None:
         resolve_abbreviations = False
     else:
         resolve_abbreviations = True
-
-    
 
     # Load data
     data = SapBertBigBioDataset(
@@ -89,5 +88,4 @@ def main(args):
 if __name__ == "__main__":
     init_logging()
     args = parse_args_bigbio()
-
     main(args)
