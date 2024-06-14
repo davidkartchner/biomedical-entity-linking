@@ -7,6 +7,7 @@ from datasets import load_dataset
 
 from dataset_consts import *
 
+
 def load_bigbio_dataset(dataset_name):
     """
     Load BigBio dataset
@@ -214,9 +215,9 @@ def dataset_to_df(
     # Split off validation set if not given
     if val_split_ids is not None:
         print(type(val_split_ids[0]), type(deduplicated["document_id"][0]))
-        deduplicated.loc[
-            deduplicated["document_id"].isin(val_split_ids), "split"
-        ] = "validation"
+        deduplicated.loc[deduplicated["document_id"].isin(val_split_ids), "split"] = (
+            "validation"
+        )
 
     return deduplicated
 
