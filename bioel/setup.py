@@ -46,9 +46,13 @@ setup(
         "faiss-cpu",
         "wandb",
         "scikit-learn",
+<<<<<<< HEAD
         "torch",
         "scispacy",
         "fairseq",
         "accelerate",
+=======
+        "torch", 
+>>>>>>> 4-sapbert-implementation
     ],
 )
