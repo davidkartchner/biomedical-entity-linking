@@ -134,7 +134,6 @@ class Model_Wrapper:
         train_script_path = f"bioel/models/krissbert/train.py"
         evaluate_script_path = f"bioel/models/krissbert/evaluate.py"
 
-
     @classmethod
     def load_scispacy(cls, name, params_file):
         # No traditional model object, just a string identifier
@@ -149,7 +148,7 @@ class Model_Wrapper:
         params = Config(params_file)
         train_script_path = f"bioel/models/biogenel/train_biogenel_biobart.py"
         evaluate_script_path = f"bioel/models/biogenel/eval_biogenel_biobart.py"
-        model = BioGenElLightningModule(config = params)
+        model = BioGenElLightningModule(config=params)
         return cls(
             model,
             name,
@@ -157,13 +156,13 @@ class Model_Wrapper:
             evaluate_script_path,
             params,
         )
-         
-    @classmethod       
+
+    @classmethod
     def load_biogenel(cls, name, params_file):
         params = Config(params_file)
         train_script_path = f"bioel/models/biogenel/train_biogenel_biobart.py"
         evaluate_script_path = f"bioel/models/biogenel/eval_biogenel_biobart.py"
-        model = BioGenElLightningModule(config = params)
+        model = BioGenElLightningModule(config=params)
         return cls(
             model,
             name,
@@ -171,7 +170,7 @@ class Model_Wrapper:
             evaluate_script_path,
             params,
         )
-        
+
     def training(self):
         if self.name.lower() == "scispacy":
             print('ScispaCy "training" is done directly in the inference.')
@@ -186,42 +185,42 @@ class Model_Wrapper:
         evaluate_module.evaluate_model(self.params, self.model)
 
 
-if __name__ == "__main__":
-    # print("Start work on krissbert")
-    # krissbert = Model_Wrapper.load_krissbert(
-    #     name="krissbert",
-    #     params_file="/home2/cye73/data_test2/krissbert/ncbi_disease/params.json",
-    # )
-    # krissbert.training()
-    # krissbert.inference()
-    # print("Finish work on krissbert")
+# if __name__ == "__main__":
+#     # print("Start work on krissbert")
+#     # krissbert = Model_Wrapper.load_krissbert(
+#     #     name="krissbert",
+#     #     params_file="/home2/cye73/data_test2/krissbert/ncbi_disease/params.json",
+#     # )
+#     # krissbert.training()
+#     # krissbert.inference()
+#     # print("Finish work on krissbert")
 
-    # Load scispacy model
-    scispacy_params = {
-        "dataset": "ncbi_disease",
-        "load_function": "load_medic",
-        "ontology_dict": {
-            "name": "medic",
-            "filepath": "/mitchell/entity-linking/kbs/medic.tsv",
-        },
-        "k": 10,
-        "path_to_save": "/home2/cye73/data_test2/scispacy/kb_paths_scispacy/ncbi_disease",
-        "output_path": "/home2/cye73/results2/scispacy/ncbi_disease_output.json",
-        "equivalant_cuis": True,
-        "path_to_abbrev": "/home2/cye73/data_test2/abbreviations.json",
-    }
-    scispacy = Model_Wrapper.load_scispacy(name="scispacy", params_file=scispacy_params)
-    scispacy.training()
-    scispacy.inference()
-        evaluate_module.evaluate_model(self.params, self.model)
+#     # Load scispacy model
+#     scispacy_params = {
+#         "dataset": "ncbi_disease",
+#         "load_function": "load_medic",
+#         "ontology_dict": {
+#             "name": "medic",
+#             "filepath": "/mitchell/entity-linking/kbs/medic.tsv",
+#         },
+#         "k": 10,
+#         "path_to_save": "/home2/cye73/data_test2/scispacy/kb_paths_scispacy/ncbi_disease",
+#         "output_path": "/home2/cye73/results2/scispacy/ncbi_disease_output.json",
+#         "equivalant_cuis": True,
+#         "path_to_abbrev": "/home2/cye73/data_test2/abbreviations.json",
+#     }
+#     scispacy = Model_Wrapper.load_scispacy(name="scispacy", params_file=scispacy_params)
+#     scispacy.training()
+#     scispacy.inference()
+
 
 class Config:
     def __init__(self, json_file=None):
         if json_file:
             self.load_from_json(json_file)
-    
+
     def load_from_json(self, json_file):
-        with open(json_file, 'r') as f:
+        with open(json_file, "r") as f:
             json_params = json.load(f)
             for key, value in json_params.items():
                 setattr(self, key, value)
@@ -229,30 +228,12 @@ class Config:
     def __repr__(self):
         return f"Config({self.__dict__})"
 
+
 if __name__ == "__main__":
-    arboel_biencoder = Model_Wrapper.load_arboel_biencoder(
-        name="arboel_biencoder",
-        params_file="/home2/cye73/data_test2/arboel/bc5cdr/params_biencoder.json",
-    )
-    arboel_biencoder.training()
-    arboel_biencoder.inference()
-
-    print("Finish work on biencoder")
-
-    print("Start work on crossencoder")
-    arboel_cross = Model_Wrapper.load_arboel_crossencoder(
-        name="arboel_crossencoder",
-        params_file="/home2/cye73/data_test2/arboel/bc5cdr/params_crossencoder.json",
-    )
-    arboel_cross.training()
-    arboel_cross.inference()
-
-    print("Finish work on crossencoder")
-
     print("Start work on biobart")
     biobart_model = Model_Wrapper.load_biobart(
         name="biobart",
-        params_file="models/biogenel/biogenel_ncbi_config.json",
+        params_file="/home2/cye73/data_test2/biogenel/ncbi_config.json",
     )
     biobart_model.training()
-    #biobart_model.inference()
+    # biobart_model.inference()

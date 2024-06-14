@@ -8,14 +8,15 @@ import argparse
 import pickle
 import pandas as pd
 from transformers import BartTokenizer, AutoTokenizer
-from trie import Trie
+from bioel.models.biogenel.trie import Trie
 
 sys.setrecursionlimit(8000)
 
-def create_trie(data_dir:str, use_biobart_tokenizer = False):
-    '''
+
+def create_trie(data_dir: str, use_biobart_tokenizer=False):
+    """
     Function that creates the Trie given a repository director containing the target knowledge base (ontology) and a tokenizer
-    '''
+    """
     if use_biobart_tokenizer:
         tokenizer = AutoTokenizer.from_pretrained("GanjinZero/biobart-v2-large")
     else:
@@ -27,7 +28,6 @@ def create_trie(data_dir:str, use_biobart_tokenizer = False):
     entities = []
     for cui in cui2str:
         entities += cui2str[cui]
-
 
     trie = Trie(
         [16] + list(tokenizer(" " + entity.lower())["input_ids"][1:])

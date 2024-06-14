@@ -12,11 +12,21 @@ import ujson
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 from datasets import load_dataset
-from bioel.utils.bigbio_utils import dataset_to_documents, dataset_to_df, resolve_abbreviation, load_dataset_df
-from bioel.dataset_consts import CUIS_TO_REMAP, CUIS_TO_EXCLUDE, VALIDATION_DOCUMENT_IDS
+from bioel.utils.bigbio_utils import (
+    dataset_to_documents,
+    dataset_to_df,
+    resolve_abbreviation,
+    load_dataset_df,
+)
+from bioel.utils.dataset_consts import (
+    CUIS_TO_REMAP,
+    CUIS_TO_EXCLUDE,
+    VALIDATION_DOCUMENT_IDS,
+)
 from bioel.models.biogenel.data_processing import data_preprocess
 from bioel.models.biogenel.trie.create_trie_and_target_kb import create_trie
 from bioel.ontology import BiomedicalOntology
+
 
 class MedMentionsDataset(torch.utils.data.Dataset):
     def __init__(self, encodings, labels, test_set=False):
@@ -101,11 +111,11 @@ def read_ids_from_json(path, prefix_mention_is=False):
     ):
         x = ujson.loads(x)
         y = ujson.loads(y)
-        
+
         prefix = y[0]
         label = y[1]
         y = sum(y, [])
-        
+
         max_len_x = np.max([max_len_x, len(sum(x, [])) + 3])
         max_len_y = np.max([max_len_y, len(y) + 2])
 
@@ -205,8 +215,19 @@ def prepare_trainer_dataset(
 
 
 class BioGenELDataModule(pl.LightningDataModule):
-    def __init__(self, tokenizer, dataset_name: str, ontology: BiomedicalOntology, save_data_dir = "data/", preprocess_data = True,
-                prefix_mention_is=False, evaluate=False, resolve_abbrevs=False, path_to_abbrev= "abbreviations.json", batch_size = 1):
+    def __init__(
+        self,
+        tokenizer,
+        dataset_name: str,
+        ontology: BiomedicalOntology,
+        save_data_dir="data/",
+        preprocess_data=True,
+        prefix_mention_is=False,
+        evaluate=False,
+        resolve_abbrevs=False,
+        path_to_abbrev="abbreviations.json",
+        batch_size=1,
+    ):
         super().__init__()
         self.tokenizer = tokenizer
         self.save_data_dir = save_data_dir
@@ -222,17 +243,25 @@ class BioGenELDataModule(pl.LightningDataModule):
     def prepare_data(self):
         # Prepare the .target and .source files
         if self.preprocess_data:
-            self.save_data_dir = data_preprocess(self.dataset_name, self.save_data_dir, self.ontology, self.path_to_abbrev, self.resolve_abbrevs)
-            create_trie(self.save_data_dir, use_biobart_tokenizer = True)
+            self.save_data_dir = data_preprocess(
+                self.dataset_name,
+                self.save_data_dir,
+                self.ontology,
+                self.path_to_abbrev,
+                self.resolve_abbrevs,
+            )
+            create_trie(self.save_data_dir, use_biobart_tokenizer=True)
 
     def setup(self, stage=None):
         # Assign train/val datasets for use in dataloaders and prepare the .token.json files
-        if stage == 'fit' or stage is None:
+        if stage == "fit" or stage is None:
             if not self.resolve_abbrevs:
-                dataset = load_dataset(f"bigbio/{self.dataset_name}", name=f"{self.dataset_name}_bigbio_kb")
+                dataset = load_dataset(
+                    f"bigbio/{self.dataset_name}", name=f"{self.dataset_name}_bigbio_kb"
+                )
                 entity_remapping_dict = CUIS_TO_REMAP[self.dataset_name]
                 entities_to_exclude = CUIS_TO_EXCLUDE[self.dataset_name]
-                
+
                 if self.dataset_name in VALIDATION_DOCUMENT_IDS:
                     validation_pmids = VALIDATION_DOCUMENT_IDS[self.dataset_name]
                 else:
@@ -246,22 +275,30 @@ class BioGenELDataModule(pl.LightningDataModule):
                 )
                 self.deduplicated["mention"] = self.deduplicated["text"]
             else:
-                self.deduplicated = load_dataset_df(self.dataset_name, path_to_abbrev = self.path_to_abbrev)
+                self.deduplicated = load_dataset_df(
+                    self.dataset_name, path_to_abbrev=self.path_to_abbrev
+                )
                 self.deduplicated["mention"] = self.deduplicated["text"]
             if not self.evaluate:
                 self.train_set, _, _ = prepare_trainer_dataset(
-                    self.tokenizer, self.save_data_dir, self.prefix_mention_is, self.evaluate
+                    self.tokenizer,
+                    self.save_data_dir,
+                    self.prefix_mention_is,
+                    self.evaluate,
                 )
             if self.evaluate:
                 _, self.dev_set, self.test_set = prepare_trainer_dataset(
-                    self.tokenizer, self.save_data_dir, self.prefix_mention_is, self.evaluate
+                    self.tokenizer,
+                    self.save_data_dir,
+                    self.prefix_mention_is,
+                    self.evaluate,
                 )
 
     def train_dataloader(self):
-        return DataLoader(self.train_set, batch_size = self.batch_size, shuffle=True)
-    
+        return DataLoader(self.train_set, batch_size=self.batch_size, shuffle=True)
+
     def dev_dataloader(self):
-        return DataLoader(self.dev_set, batch_size = self.batch_size, shuffle=True)
-    
+        return DataLoader(self.dev_set, batch_size=self.batch_size, shuffle=True)
+
     def test_dataloader(self):
-        return DataLoader(self.test_set, batch_size = self.batch_size, shuffle=True)
+        return DataLoader(self.test_set, batch_size=self.batch_size, shuffle=True)

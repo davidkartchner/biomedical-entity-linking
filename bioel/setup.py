@@ -48,5 +48,7 @@ setup(
         "scikit-learn",
         "torch",
         "scispacy",
+        "fairseq",
+        "accelerate",
     ],
 )

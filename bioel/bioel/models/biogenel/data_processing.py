@@ -3,7 +3,8 @@ import ujson
 import warnings
 from collections import defaultdict
 import pandas as pd
-#from bigbio.dataloader import BigBioConfigHelpers
+
+# from bigbio.dataloader import BigBioConfigHelpers
 import json
 import joblib
 import numpy as np
@@ -14,8 +15,17 @@ from tqdm.auto import tqdm
 tqdm.pandas()
 
 from datasets import load_dataset
-from bioel.utils.bigbio_utils import dataset_to_documents, dataset_to_df, resolve_abbreviation, load_bigbio_dataset
-from bioel.dataset_consts import CUIS_TO_REMAP, CUIS_TO_EXCLUDE, VALIDATION_DOCUMENT_IDS
+from bioel.utils.bigbio_utils import (
+    dataset_to_documents,
+    dataset_to_df,
+    resolve_abbreviation,
+    load_bigbio_dataset,
+)
+from bioel.utils.dataset_consts import (
+    CUIS_TO_REMAP,
+    CUIS_TO_EXCLUDE,
+    VALIDATION_DOCUMENT_IDS,
+)
 from bioel.ontology import BiomedicalOntology
 from sklearn.feature_extraction.text import TfidfVectorizer
 
@@ -23,9 +33,9 @@ from bioel.ontology import BiomedicalOntology
 from typing import List
 
 
-def cuis_to_aliases(ontology: BiomedicalOntology , save_dir: str, dataset_name: str):
+def cuis_to_aliases(ontology: BiomedicalOntology, save_dir: str, dataset_name: str):
     """
-    Creates the .txt file that maps the Cuis to the aliases and canonical name for each entities 
+    Creates the .txt file that maps the Cuis to the aliases and canonical name for each entities
     from the provided ontology.
 
     Parameters
@@ -42,38 +52,36 @@ def cuis_to_aliases(ontology: BiomedicalOntology , save_dir: str, dataset_name: 
     import re
 
     file_path = os.path.join(save_dir, f"{dataset_name}_aliases.txt")
-    with open(file_path, "w", encoding='utf-8') as file:
+    with open(file_path, "w", encoding="utf-8") as file:
         for cui, entity in ontology.entities.items():
-            file.write(f"{cui}||{entity.name}\n")                               
-            if len(entity.aliases) != 0 :
+            file.write(f"{cui}||{entity.name}\n")
+            if len(entity.aliases) != 0:
                 if isinstance(entity.aliases, list):
                     for word in entity.aliases:
                         if word is not None:
-                            #print(word)
+                            # print(word)
                             word = word.strip()
                             file.write(f"{cui}||{word}\n")
                 else:
-                    #words = entity.aliases.split('; , ')
-                    words = re.split('[;|]', entity.aliases)
+                    # words = entity.aliases.split('; , ')
+                    words = re.split("[;|]", entity.aliases)
                     for word in words:
                         word = word.strip()
                         file.write(f"{cui}||{word}\n")
-            if entity.equivalant_cuis :
+            if entity.equivalant_cuis:
                 for eqcui in entity.equivalant_cuis:
                     if eqcui != entity.cui:
                         file.write(f"{eqcui}||{entity.name}\n")
-                        if entity.aliases :
-                            words = re.split('[;|]', entity.aliases)
+                        if entity.aliases:
+                            words = re.split("[;|]", entity.aliases)
                             for word in words:
                                 word = word.strip()
                                 file.write(f"{eqcui}||{word}\n")
-    
-    return(file_path)
+
+    return file_path
 
 
-
-def create_tfidf_ann_index(
-    out_path: str, input_path_kb: str):
+def create_tfidf_ann_index(out_path: str, input_path_kb: str):
     """
     Build tfidf vectorizer and ann index.
 
@@ -100,7 +108,7 @@ def create_tfidf_ann_index(
                 # Append the alias to the list
                 concept_aliases.append(alias)
 
-    #concept_aliases = list(kb.alias_to_cuis.keys())
+    # concept_aliases = list(kb.alias_to_cuis.keys())
 
     # NOTE: here we are creating the tf-idf vectorizer with float32 type, but we can serialize the
     # resulting vectors using float16, meaning they take up half the memory on disk. Unfortunately
@@ -181,6 +189,7 @@ def put_mention_in_context(
 
     return mention_in_context
 
+
 def contextualize_mentions(
     doc_dict,
     deduplicated,
@@ -207,6 +216,7 @@ def contextualize_mentions(
 
     return deduplicated
 
+
 def create_training_files(
     save_dir: str,
     dataset_name: str,
@@ -214,11 +224,11 @@ def create_training_files(
     deduplicated,
     abbreviations_dict: dict,
     cui2alias: dict,
-    resolve_abbrevs: bool=True,
+    resolve_abbrevs: bool = True,
 ):
     # Get contextualized mentions
-    #print("deduplicated here", deduplicated)
-    test_docs = deduplicated[deduplicated['split']=='validation']
+    # print("deduplicated here", deduplicated)
+    test_docs = deduplicated[deduplicated["split"] == "validation"]
     print(test_docs)
 
     df = contextualize_mentions(
@@ -264,7 +274,8 @@ def create_training_files(
     df["source_json"] = df["contextualized_mention"].map(lambda x: ujson.dumps([x]))
 
     df["target_json"] = df[["mention", "most_similar_alias"]].progress_apply(
-        lambda x: ujson.dumps([f"{x[0]} is", x[1] if x[1] is not None else "unknown"]), axis=1
+        lambda x: ujson.dumps([f"{x[0]} is", x[1] if x[1] is not None else "unknown"]),
+        axis=1,
     )
 
     # Store/check results
@@ -330,7 +341,13 @@ def create_target_kb_dict(file_path, dataset_name):
     return processed_dict
 
 
-def data_preprocess(dataset_name: str, save_dir: str, ontology: BiomedicalOntology, path_to_abbrev: str, resolve_abbrevs=False):
+def data_preprocess(
+    dataset_name: str,
+    save_dir: str,
+    ontology: BiomedicalOntology,
+    path_to_abbrev: str,
+    resolve_abbrevs=False,
+):
 
     if not resolve_abbrevs:
         save_dir = os.path.join(save_dir, "no_abbr_res/")
@@ -343,7 +360,7 @@ def data_preprocess(dataset_name: str, save_dir: str, ontology: BiomedicalOntolo
     create_tfidf_ann_index(f"file_dumps/{dataset_name}", mappings_dir)
 
     # read data
-    #dataset = load_dataset(f"bigbio/{dataset_name}", name=f"{dataset_name}_bigbio_kb")
+    # dataset = load_dataset(f"bigbio/{dataset_name}", name=f"{dataset_name}_bigbio_kb")
     dataset = load_bigbio_dataset(f"{dataset_name}")
 
     target_kb_dict = create_target_kb_dict(save_dir, dataset_name)
@@ -357,7 +374,7 @@ def data_preprocess(dataset_name: str, save_dir: str, ontology: BiomedicalOntolo
             abbreviations_dict = ujson.load(json_file)
     else:
         abbreviations_dict = None
-    
+
     entity_remapping_dict = CUIS_TO_REMAP[dataset_name]
     entities_to_exclude = CUIS_TO_EXCLUDE[dataset_name]
 
@@ -386,7 +403,7 @@ def data_preprocess(dataset_name: str, save_dir: str, ontology: BiomedicalOntolo
         deduplicated=deduplicated,
         abbreviations_dict=abbreviations_dict,
         cui2alias=target_kb_dict,
-        resolve_abbrevs=resolve_abbrevs
+        resolve_abbrevs=resolve_abbrevs,
     )
 
     return save_dir
