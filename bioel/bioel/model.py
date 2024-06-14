@@ -4,6 +4,8 @@ from bioel.models.arboel.crossencoder.model.CrossEncoderLightningModule import (
 )
 from bioel.models.arboel.biencoder.model.common.params import BlinkParser
 from bioel.models.krissbert.model.model import Krissbert
+from bioel.models.biogenel.LightningModule import BioGenElLightningModule
+
 import json
 import importlib
 import argparse
@@ -115,14 +117,6 @@ class Model_Wrapper:
         pass
 
     @classmethod
-    def load_biobart(cls, name, params):
-        pass
-
-    @classmethod
-    def load_biogenel(cls, name, params):
-        pass
-
-    @classmethod
     def load_krissbert(cls, name, params_file, checkpoint_path=None):
         if isinstance(params_file, str) and os.path.isfile(params_file):
             with open(params_file, "r") as f:
@@ -139,13 +133,7 @@ class Model_Wrapper:
 
         train_script_path = f"bioel/models/krissbert/train.py"
         evaluate_script_path = f"bioel/models/krissbert/evaluate.py"
-        return cls(
-            model,
-            name,
-            train_script_path,
-            evaluate_script_path,
-            params,
-        )
+
 
     @classmethod
     def load_scispacy(cls, name, params_file):
@@ -156,6 +144,34 @@ class Model_Wrapper:
 
         return cls(model, name, train_script_path, evaluate_script_path, params_file)
 
+    @classmethod
+    def load_biobart(cls, name, params_file):
+        params = Config(params_file)
+        train_script_path = f"bioel/models/biogenel/train_biogenel_biobart.py"
+        evaluate_script_path = f"bioel/models/biogenel/eval_biogenel_biobart.py"
+        model = BioGenElLightningModule(config = params)
+        return cls(
+            model,
+            name,
+            train_script_path,
+            evaluate_script_path,
+            params,
+        )
+         
+    @classmethod       
+    def load_biogenel(cls, name, params_file):
+        params = Config(params_file)
+        train_script_path = f"bioel/models/biogenel/train_biogenel_biobart.py"
+        evaluate_script_path = f"bioel/models/biogenel/eval_biogenel_biobart.py"
+        model = BioGenElLightningModule(config = params)
+        return cls(
+            model,
+            name,
+            train_script_path,
+            evaluate_script_path,
+            params,
+        )
+        
     def training(self):
         if self.name.lower() == "scispacy":
             print('ScispaCy "training" is done directly in the inference.')
@@ -167,7 +183,6 @@ class Model_Wrapper:
     def inference(self):
         module_name = self.evaluate_script_path.replace("/", ".").rsplit(".", 1)[0]
         evaluate_module = importlib.import_module(module_name)
-        print(evaluate_module)
         evaluate_module.evaluate_model(self.params, self.model)
 
 
@@ -198,3 +213,46 @@ if __name__ == "__main__":
     scispacy = Model_Wrapper.load_scispacy(name="scispacy", params_file=scispacy_params)
     scispacy.training()
     scispacy.inference()
+        evaluate_module.evaluate_model(self.params, self.model)
+
+class Config:
+    def __init__(self, json_file=None):
+        if json_file:
+            self.load_from_json(json_file)
+    
+    def load_from_json(self, json_file):
+        with open(json_file, 'r') as f:
+            json_params = json.load(f)
+            for key, value in json_params.items():
+                setattr(self, key, value)
+
+    def __repr__(self):
+        return f"Config({self.__dict__})"
+
+if __name__ == "__main__":
+    arboel_biencoder = Model_Wrapper.load_arboel_biencoder(
+        name="arboel_biencoder",
+        params_file="/home2/cye73/data_test2/arboel/bc5cdr/params_biencoder.json",
+    )
+    arboel_biencoder.training()
+    arboel_biencoder.inference()
+
+    print("Finish work on biencoder")
+
+    print("Start work on crossencoder")
+    arboel_cross = Model_Wrapper.load_arboel_crossencoder(
+        name="arboel_crossencoder",
+        params_file="/home2/cye73/data_test2/arboel/bc5cdr/params_crossencoder.json",
+    )
+    arboel_cross.training()
+    arboel_cross.inference()
+
+    print("Finish work on crossencoder")
+
+    print("Start work on biobart")
+    biobart_model = Model_Wrapper.load_biobart(
+        name="biobart",
+        params_file="models/biogenel/biogenel_ncbi_config.json",
+    )
+    biobart_model.training()
+    #biobart_model.inference()

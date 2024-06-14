@@ -1,0 +1,1 @@
+from bioel.models.biogenel.trie.trie import Trie
