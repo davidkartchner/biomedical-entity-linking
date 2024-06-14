@@ -38,11 +38,11 @@ create_abbrev(output_dir, all_dataset)
 ## Example usage
 ```
 # Import modules
-from bioel.model import Model_Wrapper
+from bioel.model import BioEL_Model
 from bioel.evaluate import Evaluate
 
 # load model
-krissbert = Model_Wrapper.load_krissbert(
+krissbert = BioEL_Model.load_krissbert(
         name="krissbert", params_file=params,
     )
 # Look at data/params.json for more information about the parameters

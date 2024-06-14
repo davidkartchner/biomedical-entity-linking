@@ -14,7 +14,7 @@ import os
 import torch
 
 
-class Model_Wrapper:
+class BioEL_Model:
     def __init__(self, model, name, train_script_path, evaluate_script_path, params):
         self.name = name  # name of the model
         self.model = model  # model object
@@ -185,35 +185,6 @@ class Model_Wrapper:
         evaluate_module.evaluate_model(self.params, self.model)
 
 
-# if __name__ == "__main__":
-#     # print("Start work on krissbert")
-#     # krissbert = Model_Wrapper.load_krissbert(
-#     #     name="krissbert",
-#     #     params_file="/home2/cye73/data_test2/krissbert/ncbi_disease/params.json",
-#     # )
-#     # krissbert.training()
-#     # krissbert.inference()
-#     # print("Finish work on krissbert")
-
-#     # Load scispacy model
-#     scispacy_params = {
-#         "dataset": "ncbi_disease",
-#         "load_function": "load_medic",
-#         "ontology_dict": {
-#             "name": "medic",
-#             "filepath": "/mitchell/entity-linking/kbs/medic.tsv",
-#         },
-#         "k": 10,
-#         "path_to_save": "/home2/cye73/data_test2/scispacy/kb_paths_scispacy/ncbi_disease",
-#         "output_path": "/home2/cye73/results2/scispacy/ncbi_disease_output.json",
-#         "equivalant_cuis": True,
-#         "path_to_abbrev": "/home2/cye73/data_test2/abbreviations.json",
-#     }
-#     scispacy = Model_Wrapper.load_scispacy(name="scispacy", params_file=scispacy_params)
-#     scispacy.training()
-#     scispacy.inference()
-
-
 class Config:
     def __init__(self, json_file=None):
         if json_file:
@@ -231,9 +202,33 @@ class Config:
 
 if __name__ == "__main__":
     print("Start work on biobart")
-    biobart_model = Model_Wrapper.load_biobart(
+    biobart_model = BioEL_Model.load_biobart(
         name="biobart",
         params_file="/home2/cye73/data_test2/biogenel/ncbi_config.json",
     )
     biobart_model.training()
     # biobart_model.inference()
+
+    # # krissbert = BioEL_Model.load_krissbert(
+    # #     name="krissbert",
+    # #     params_file="/home2/cye73/data_test2/krissbert/ncbi_disease/params.json",
+    # # )
+    # # krissbert.training()
+    # # krissbert.inference()
+
+    # scispacy_params = {
+    #     "dataset": "ncbi_disease",
+    #     "load_function": "load_medic",
+    #     "ontology_dict": {
+    #         "name": "medic",
+    #         "filepath": "/mitchell/entity-linking/kbs/medic.tsv",
+    #     },
+    #     "k": 10,
+    #     "path_to_save": "/home2/cye73/data_test2/scispacy/kb_paths_scispacy/ncbi_disease",
+    #     "output_path": "/home2/cye73/results2/scispacy/ncbi_disease_output.json",
+    #     "equivalant_cuis": True,
+    #     "path_to_abbrev": "/home2/cye73/data_test2/abbreviations.json",
+    # }
+    # scispacy = BioEL_Model.load_scispacy(name="scispacy", params_file=scispacy_params)
+    # scispacy.training()
+    # scispacy.inference()
