@@ -331,11 +331,12 @@ class Evaluate:
             self.datasets[name] = {}
             for model in self.model_names:
                 file_path = self.path_to_result[name][model]
-                if not os.path.exists(file_path):
-                    raise FileNotFoundError(
-                        f"Results file for model {model} on dataset {name} not found. Path to this file doesn't exist: {file_path}"
+                if file_path and os.path.exists(file_path):
+                    self.datasets[name][model] = ujson.load(open(file_path))
+                else:
+                    print(
+                        f"Skipping model {model} for dataset {name} because the file is missing or the path is invalid."
                     )
-                self.datasets[name][model] = ujson.load(open(file_path))
 
     def process_datasets(self):
         """

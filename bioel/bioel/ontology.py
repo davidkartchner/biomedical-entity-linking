@@ -180,15 +180,18 @@ class BiomedicalOntology:
         types = []
 
         logger.info(f"Reading entrez from {filepath}")
+        col_names = "Disease_Name   Disease_ID       Alt_Disease_IDs   Definition      Parent_IDs       Tree_Numbers     Parent_Tree_Numbers       Synonyms        Slim_Mappings".split()
 
         # Open the TSV file
         medic = pd.read_csv(
             filepath,
+            comment="#",
             delimiter="\t",
             na_filter=False,
+            names=col_names,
             usecols=[
                 "Disease_Name",
-                "DiseaseID",
+                "Disease_ID",
                 "Alt_Disease_IDs",
                 "Definition",
                 "Parent_IDs",
@@ -199,31 +202,32 @@ class BiomedicalOntology:
             ],
         )
         for index, row in medic.iterrows():
-            equivalant_cuis = [row["DiseaseID"]]
-            alt_ids = row["AltDiseaseIDs"].split("|") if row["AltDiseaseIDs"] else []
+            equivalant_cuis = [row["Disease_ID"]]
+            alt_ids = (
+                row["Alt_Disease_IDs"].split("|") if row["Alt_Disease_IDs"] else []
+            )
             for alt_id in alt_ids:
                 if alt_id not in equivalant_cuis and alt_id[:2] != "DO":
                     equivalant_cuis.append(alt_id)
 
             entity = BiomedicalEntity(
-                cui=row["DiseaseID"],
-                name=row["DiseaseName"],
+                cui=row["Disease_ID"],
+                name=row["Disease_Name"],
                 types="Disease",
                 aliases=row["Synonyms"],
                 definition=row["Definition"],
-                taxonomy=row["tax_id"],
                 equivalant_cuis=equivalant_cuis,
             )
 
-            if row["geneid"] in entities:
+            if row["Disease_ID"] in entities:
                 logger.warning(
-                    f"Duplicate CUI {row['geneid']} found in ontology.  Skipping."
+                    f"Duplicate CUI {row['Disease_ID']} found in ontology.  Skipping."
                 )
                 continue
 
-            entities[row["geneid"]] = entity
+            entities[row["Disease_ID"]] = entity
 
-            types.append(row["type_of_gene"])
+            types.append("Disease")
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
 
     @classmethod

@@ -47,5 +47,6 @@ setup(
         "wandb",
         "scikit-learn",
         "torch",
+        "scispacy",
     ],
 )
