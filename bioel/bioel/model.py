@@ -115,6 +115,14 @@ class Model_Wrapper:
         pass
 
     @classmethod
+    def load_biobart(cls, name, params):
+        pass
+
+    @classmethod
+    def load_biogenel(cls, name, params):
+        pass
+
+    @classmethod
     def load_krissbert(cls, name, params_file, checkpoint_path=None):
         if isinstance(params_file, str) and os.path.isfile(params_file):
             with open(params_file, "r") as f:
@@ -140,34 +148,53 @@ class Model_Wrapper:
         )
 
     @classmethod
-    def load_scispacy(cls, name, params):
-        pass
+    def load_scispacy(cls, name, params_file):
+        # No traditional model object, just a string identifier
+        model = "scispacy"  # Identifier for scispacy
+        train_script_path = None  # ScispaCy does not require training
+        evaluate_script_path = "bioel/models/scispacy/evaluate.py"
 
-    @classmethod
-    def load_biobart(cls, name, params):
-        pass
-
-    @classmethod
-    def load_biogenel(cls, name, params):
-        pass
+        return cls(model, name, train_script_path, evaluate_script_path, params_file)
 
     def training(self):
-        module_name = self.train_script_path.replace("/", ".").rsplit(".", 1)[0]
-        train_module = importlib.import_module(module_name)
-        train_module.train_model(params=self.params, model=self.model)
+        if self.name.lower() == "scispacy":
+            print('ScispaCy "training" is done directly in the inference.')
+        else:
+            module_name = self.train_script_path.replace("/", ".").rsplit(".", 1)[0]
+            train_module = importlib.import_module(module_name)
+            train_module.train_model(params=self.params, model=self.model)
 
     def inference(self):
         module_name = self.evaluate_script_path.replace("/", ".").rsplit(".", 1)[0]
         evaluate_module = importlib.import_module(module_name)
+        print(evaluate_module)
         evaluate_module.evaluate_model(self.params, self.model)
 
 
 if __name__ == "__main__":
-    print("Start work on krissbert")
-    krissbert = Model_Wrapper.load_krissbert(
-        name="krissbert",
-        params_file="/home2/cye73/data_test2/krissbert/ncbi_disease/params.json",
-    )
-    krissbert.training()
-    krissbert.inference()
-    print("Finish work on krissbert")
+    # print("Start work on krissbert")
+    # krissbert = Model_Wrapper.load_krissbert(
+    #     name="krissbert",
+    #     params_file="/home2/cye73/data_test2/krissbert/ncbi_disease/params.json",
+    # )
+    # krissbert.training()
+    # krissbert.inference()
+    # print("Finish work on krissbert")
+
+    # Load scispacy model
+    scispacy_params = {
+        "dataset": "ncbi_disease",
+        "load_function": "load_medic",
+        "ontology_dict": {
+            "name": "medic",
+            "filepath": "/mitchell/entity-linking/kbs/medic.tsv",
+        },
+        "k": 10,
+        "path_to_save": "/home2/cye73/data_test2/scispacy/kb_paths_scispacy/ncbi_disease",
+        "output_path": "/home2/cye73/results2/scispacy/ncbi_disease_output.json",
+        "equivalant_cuis": True,
+        "path_to_abbrev": "/home2/cye73/data_test2/abbreviations.json",
+    }
+    scispacy = Model_Wrapper.load_scispacy(name="scispacy", params_file=scispacy_params)
+    scispacy.training()
+    scispacy.inference()

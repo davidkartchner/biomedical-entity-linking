@@ -78,12 +78,12 @@ class EntityLinker:
         threshold: float = 0.7,
         no_definition_threshold: float = 0.95,
         filter_for_definitions: bool = True,
-        max_entities_per_mention: int = 5
+        max_entities_per_mention: int = 5,
     ):
         Span.set_extension("kb_ents", default=[], force=True)
 
         self.candidate_generator = candidate_generator or CandidateGenerator(
-            serialized_kb = serialized_kb
+            serialized_kb=serialized_kb
         )
         self.resolve_abbreviations = resolve_abbreviations
         self.k = k

@@ -11,7 +11,12 @@ from bioel.utils.file_cache import get_path
 
 import nmslib
 from nmslib.dist import FloatIndex
-from bioel.models.scispacy.scispacy_embeddings import (KnowledgeBaseEmbeddings, load_approximate_nearest_neighbours_index, LinkerPaths)
+from bioel.models.scispacy.scispacy_embeddings import (
+    KnowledgeBaseEmbeddings,
+    load_approximate_nearest_neighbours_index,
+    LinkerPaths,
+)
+
 
 class MentionCandidate(NamedTuple):
     """
@@ -84,7 +89,7 @@ class CandidateGenerator:
 
     def __init__(
         self,
-        serialized_kb : LinkerPaths,
+        serialized_kb: LinkerPaths,
         ann_index: Optional[FloatIndex] = None,
         tfidf_vectorizer: Optional[TfidfVectorizer] = None,
         ann_concept_aliases_list: Optional[List[str]] = None,
@@ -92,8 +97,7 @@ class CandidateGenerator:
         ef_search: int = 200,
         name: Optional[str] = None,
     ) -> None:
-
-        '''
+        """
         if name is not None and any(
             [ann_index, tfidf_vectorizer, ann_concept_aliases_list, kb]
         ):
@@ -107,7 +111,7 @@ class CandidateGenerator:
             name = "umls"
 
         linker_paths = DEFAULT_PATHS.get(name, UmlsLinkerPaths)
-        '''
+        """
 
         self.ann_index = ann_index or load_approximate_nearest_neighbours_index(
             serialized_kb=serialized_kb, ef_search=ef_search
@@ -206,7 +210,6 @@ class CandidateGenerator:
         because the index contains aliases which are canonicalized, so multiple values may map
         to the same canonical id.
         """
-
 
         if self.verbose:
             print(f"Generating candidates for {len(mention_texts)} mentions")
