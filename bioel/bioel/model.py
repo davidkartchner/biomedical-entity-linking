@@ -244,8 +244,8 @@ if __name__ == "__main__":
         name = "sapbert",
         params_file= "/home/pbathala3/entity_linking/config.json",
     )
-    #sapbert_model.training()
-    sapbert_model.inference()
+    sapbert_model.training()
+    #sapbert_model.inference()
 
     # # krissbert = BioEL_Model.load_krissbert(
     # #     name="krissbert",
