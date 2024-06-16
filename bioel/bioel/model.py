@@ -158,6 +158,13 @@ class BioEL_Model:
 
         train_script_path = f"bioel/models/krissbert/train.py"
         evaluate_script_path = f"bioel/models/krissbert/evaluate.py"
+        return cls(
+            model,
+            name,
+            train_script_path,
+            evaluate_script_path,
+            params,
+        )
 
     @classmethod
     def load_scispacy(cls, name, params_file):
