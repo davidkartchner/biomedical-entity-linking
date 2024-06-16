@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import seaborn as sns
 import ujson
 import sys
@@ -332,11 +331,12 @@ class Evaluate:
             self.datasets[name] = {}
             for model in self.model_names:
                 file_path = self.path_to_result[name][model]
-                if not os.path.exists(file_path):
-                    raise FileNotFoundError(
-                        f"Results file for model {model} on dataset {name} not found. Path to this file doesn't exist: {file_path}"
+                if file_path and os.path.exists(file_path):
+                    self.datasets[name][model] = ujson.load(open(file_path))
+                else:
+                    print(
+                        f"Skipping model {model} for dataset {name} because the file is missing or the path is invalid."
                     )
-                self.datasets[name][model] = ujson.load(open(file_path))
 
     def process_datasets(self):
         """
@@ -532,6 +532,8 @@ class Evaluate:
                 axs = [axs]
             elif num_rows == 1 or num_cols == 1:
                 axs = axs.flatten()
+            else:
+                axs = axs.ravel()
 
             for ax in axs:
                 if num_cols > 1:
@@ -563,8 +565,17 @@ class Evaluate:
             for ax in axs[num_datasets:]:
                 ax.axis("off")
 
-            axs[0].legend(ncol=5, bbox_to_anchor=(0.5, -0.57), loc="lower center")
+            handles, labels = axs[0].get_legend_handles_labels()
+            fig.legend(
+                handles,
+                labels,
+                loc="lower center",
+                ncol=len(self.model_names),
+                bbox_to_anchor=(0.5, -0.05),
+            )
+
             fig.suptitle(
-                f"Recall@k for {eval_strategy} evaluation strategy", fontsize=16
+                f"Recall@K for all models using {eval_strategy} evaluation strategy",
+                fontsize=16,
             )
             plt.show()

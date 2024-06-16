@@ -11,28 +11,18 @@ from bioel.models.arboel.crossencoder.model.CrossEncoderLightningModule import (
 )
 
 
-def main(args):
-    data_module = CrossEncoderDataModule(params=args)
-
-    MyModel = LitCrossEncoder.load_from_checkpoint(
-        params=args, checkpoint_path=args["crossencoder_checkpoint"]
-    )
+def evaluate_model(params, model):
+    data_module = CrossEncoderDataModule(params=params)
 
     trainer = L.Trainer(
         # limit_test_batches=5,
-        devices=args["devices"],
+        limit_test_batches=(
+            params["limit_test_batches"] if params["limit_test_batches"] else 1.0
+        ),
+        devices=params["devices"],
         accelerator="gpu",
         strategy="ddp_find_unused_parameters_true",
-        # enable_progress_bar=True,
         precision="16-mixed",
     )
 
-    trainer.test(model=MyModel, datamodule=data_module)
-
-
-if __name__ == "__main__":
-    parser = BlinkParser(add_model_args=True)
-    parser.add_eval_args()
-    args = parser.parse_args()
-    print(args)
-    main(args.__dict__)
+    trainer.test(model=model, datamodule=data_module)

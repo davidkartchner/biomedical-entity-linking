@@ -3,7 +3,7 @@ from typing import List, Optional, Union, Dict
 from tqdm import tqdm
 
 from bioel.logger import setup_logger
-from bioel.utils.bigbio_utils import dataset_unique_gene_ids
+from bioel.utils.bigbio_utils import dataset_unique_tax_ids
 
 import obonet
 import csv
@@ -62,7 +62,6 @@ class BiomedicalOntology:
     def get_definition(self):
         """
         Get definition of entities in the ontology
-        data: list of dict
         """
         definitions_dict = {
             entity.cui: entity.definition
@@ -180,64 +179,55 @@ class BiomedicalOntology:
         entities = {}
         types = []
 
-        logger.info(f"Reading medic from {filepath}")
-
-        # Attributes of the medic ontology
-        key_dict = [
-            "DiseaseName",
-            "DiseaseID",
-            "AltDiseaseIDs",
-            "Definition",
-            "ParentIDs",
-            "TreeNumbers",
-            "ParentTreeNumbers",
-            "Synonyms",
-            "SlimMappings",
-        ]
+        logger.info(f"Reading entrez from {filepath}")
+        col_names = "Disease_Name   Disease_ID       Alt_Disease_IDs   Definition      Parent_IDs       Tree_Numbers     Parent_Tree_Numbers       Synonyms        Slim_Mappings".split()
 
         # Open the TSV file
-        with open(filepath, newline="") as tsvfile:
-            reader = csv.reader(tsvfile, delimiter="\t")
-
-            counter = 0  # First entity in the tsv file appears in line 29
-
-            ontology = []
-            for row in reader:
-                dict = {}
-                if counter > 28:
-                    for i, elements in enumerate(row):
-                        dict[key_dict[i]] = elements
-                    ontology.append(dict)
-                counter += 1
-
-        for element in ontology:
-            equivalant_cuis = [element["DiseaseID"]]
+        medic = pd.read_csv(
+            filepath,
+            comment="#",
+            delimiter="\t",
+            na_filter=False,
+            names=col_names,
+            usecols=[
+                "Disease_Name",
+                "Disease_ID",
+                "Alt_Disease_IDs",
+                "Definition",
+                "Parent_IDs",
+                "Tree_Numbers",
+                "Parent_Tree_Numbers",
+                "Synonyms",
+                "Slim_Mappings",
+            ],
+        )
+        for index, row in medic.iterrows():
+            equivalant_cuis = [row["Disease_ID"]]
             alt_ids = (
-                element["AltDiseaseIDs"].split("|") if element["AltDiseaseIDs"] else []
+                row["Alt_Disease_IDs"].split("|") if row["Alt_Disease_IDs"] else []
             )
             for alt_id in alt_ids:
                 if alt_id not in equivalant_cuis and alt_id[:2] != "DO":
                     equivalant_cuis.append(alt_id)
 
             entity = BiomedicalEntity(
-                cui=element["DiseaseID"],
-                name=element["DiseaseName"],
-                types=["Disease"],
-                aliases=element["Synonyms"],
-                definition=element["Definition"],
+                cui=row["Disease_ID"],
+                name=row["Disease_Name"],
+                types="Disease",
+                aliases=row["Synonyms"],
+                definition=row["Definition"],
                 equivalant_cuis=equivalant_cuis,
             )
 
-            if element["DiseaseID"] in entities:
+            if row["Disease_ID"] in entities:
                 logger.warning(
-                    f"Duplicate CUI {element['DiseaseID']} found in ontology.  Skipping."
+                    f"Duplicate CUI {row['Disease_ID']} found in ontology.  Skipping."
                 )
                 continue
 
-            entities[element["DiseaseID"]] = entity
+            entities[row["Disease_ID"]] = entity
 
             types.append("Disease")
-
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
 
     @classmethod
@@ -252,8 +242,6 @@ class BiomedicalOntology:
             abbrev: str (optional)
             api_key: str (optional)
         """
-
-        unique_gene_ids = dataset_unique_gene_ids(dataset)
 
         entities = {}
         types = []
@@ -288,8 +276,10 @@ class BiomedicalOntology:
         )
         entrez.columns = [x.lower() for x in entrez.columns]
 
+        unique_tax_ids = dataset_unique_tax_ids(dataset, entrez)
+
         geneid_mask = (
-            (entrez.geneid.isin(unique_gene_ids))
+            (entrez.tax_id.isin(unique_tax_ids))
             & (~entrez.type_of_gene.isin(["unknown", "tRNA", "biological-region"]))
             & (entrez.description != "hypothetical protein")
             & (~entrez.official_name.map(lambda x: x.lower().startswith("predicted")))
@@ -380,7 +370,7 @@ class BiomedicalOntology:
         all_umls_df["has_definition"] = all_umls_df["def"].map(lambda x: x is not None)
         all_umls_df["num_aliases"] = all_umls_df["alias"].map(lambda x: len(x))
 
-        for index, row in all_umls_df.iterrows():
+        for index, row in tqdm(all_umls_df.iterrows(), desc = "Loading UMLS Ontology"):
             entity = BiomedicalEntity(
                 cui=row["cui"],
                 name=row["name"],

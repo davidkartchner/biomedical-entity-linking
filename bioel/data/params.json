@@ -1,0 +1,15 @@
+{
+    "model_name_or_path": "microsoft/BiomedNLP-KRISSBERT-PubMed-UMLS-EL",
+    "dataset_name": "ncbi_disease",
+    "batch_size": 256,
+    "max_length": 64,
+    "output_dir": "results/",
+    "seed": 12345,
+    "num_retrievals": 100,
+    "index_path": null,
+    "path_to_abbrev": "data/abbreviations.json",
+    "input_path": "results/ncbi_disease_embeddings.pickle",
+    "entity_list_names": "results/ncbi_disease_name_cuis.txt",
+    "output_path": "results/ncbi_disease.json",
+    "device": 2
+}

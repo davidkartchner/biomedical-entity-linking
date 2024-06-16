@@ -460,7 +460,9 @@ class LitCrossEncoder(L.LightningModule):
             combined_test_results["normalized_accuracy"] /= world_size
             combined_test_results["normalized_macro_avg_acc"] /= world_size
 
-            if self.trainer.limit_test_batches == 1.0:
+            if self.trainer.limit_test_batches == 1.0 and isinstance(
+                self.trainer.limit_test_batches, float
+            ):
                 combined_test_results["unnormalized_accuracy"] /= world_size
 
                 # For unnormalized_macro_avg_acc

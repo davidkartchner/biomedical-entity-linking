@@ -691,7 +691,7 @@ def evaluate_test(
             logger.info(f"recall@{recall_k} = {recall_accuracy[recall_k]}")
 
         if params["only_recall"]:
-            exit()
+            return
 
         # Pickle the graphs
         print("Saving joint graphs...")
@@ -701,7 +701,7 @@ def evaluate_test(
         if params["only_embed_and_build"]:
             logger.info(f"Saved embedding data at: {embed_data_path}")
             logger.info(f"Saved graphs at: {graph_path}")
-            exit()
+            return
 
     graph_mode = params.get("graph_mode", None)
 
@@ -1542,11 +1542,6 @@ class LitArboel(L.LightningModule):
                 batch_size=self.hparams["embed_batch_size"],
                 probe_mult_factor=self.hparams["probe_mult_factor"],
             )
-
-            # Construct the full file path
-            file_path = os.path.join(self.hparams["data_path"], "valid_men_embeds2.npy")
-            # Save the numpy array to the file
-            np.save(file_path, self.valid_men_embeds)
 
         "Performs k-nearest neighbors (k-NN) search to establish relationships between mentions and entities."
         logger.info("VALIDATION. Eval: Starting KNN search...")

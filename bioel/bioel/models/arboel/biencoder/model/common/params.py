@@ -133,12 +133,14 @@ class BlinkParser(argparse.ArgumentParser):
         parser.add_argument(
             "--path_to_biencoder_model",
             type=str,
+            required=False,
             help="The full path to the bi-encoder model to load for cross-encoder candidate generation.",
         )
         parser.add_argument(
             "--model_name_or_path",
             default="bert-base-uncased",
             type=str,
+            required=False,
             help="pre-trained model",
         )
         parser.add_argument(
@@ -165,20 +167,6 @@ class BlinkParser(argparse.ArgumentParser):
             help="Whether to add an additonal linear projection on top of the model.",
         )
         parser.add_argument(
-            "--data_path",
-            default=None,
-            type=str,
-            required=True,
-            help="Path where to save all the data : (train, valid, test).json + dictionary.pickle + abbreviations file + tui2type_hierarchy file",
-        )
-        parser.add_argument(
-            "--output_path",
-            default=None,
-            type=str,
-            required=True,
-            help="The output directory where generated output file (model, etc.) is to be dumped.",
-        )
-        parser.add_argument(
             "--pickle_src_path",
             default=None,
             type=str,
@@ -195,34 +183,6 @@ class BlinkParser(argparse.ArgumentParser):
             default=1,
             type=int,
             help="Mutliplication factor to the square root of the total search space used in FAISS.GpuIndexIVFFlat.nprobe to indicate the number of vectors to compare during search",
-        )
-
-        parser.add_argument(
-            "--bioel_model",
-            default=None,
-            type=str,
-            help="BioEL model used",
-        )
-
-        parser.add_argument(
-            "--dataset",
-            default=None,
-            type=str,
-            help="Dataset you are using",
-        )
-
-        parser.add_argument(
-            "--ontology",
-            default=None,
-            type=str,
-            help="The ontology you are using",
-        )
-
-        parser.add_argument(
-            "--ontology_dir",
-            default=None,
-            type=str,
-            help="Path to the ontology",
         )
 
     def add_training_args(self, args=None):
@@ -448,12 +408,48 @@ class BlinkParser(argparse.ArgumentParser):
             type=str,
             help="Name of the file (without the .t7 extension) that contains the custom candidate set for the cross-encoder",
         )
+
+        parser.add_argument(
+            "--data_path",
+            default=None,
+            type=str,
+            required=True,
+            help="Path where to save all the data : (train, valid, test).json + dictionary.pickle + abbreviations file + tui2type_hierarchy file",
+        )
+        parser.add_argument(
+            "--output_path",
+            default=None,
+            type=str,
+            required=True,
+            help="The output directory where generated output file (model, etc.) is to be dumped.",
+        )
         parser.add_argument(
             "--devices",
             nargs="+",
             type=int,
             default=None,
             help="IDs of the devices (gpu) used",
+        )
+
+        parser.add_argument(
+            "--dataset",
+            default=None,
+            type=str,
+            help="Dataset you are using",
+        )
+
+        parser.add_argument(
+            "--ontology",
+            default=None,
+            type=str,
+            help="The ontology you are using",
+        )
+
+        parser.add_argument(
+            "--ontology_dir",
+            default=None,
+            type=str,
+            help="Path to the ontology",
         )
 
         parser.add_argument(
@@ -493,6 +489,12 @@ class BlinkParser(argparse.ArgumentParser):
             "--tax2name_filepath",
             type=str,
             help="Path to the taxonomy to name file",
+        )
+
+        parser.add_argument(
+            "--limit_train_batches",
+            type=int,
+            help="Limit the number of training batches",
         )
 
     def add_eval_args(self, args=None):
@@ -770,6 +772,12 @@ class BlinkParser(argparse.ArgumentParser):
             default=None,
             type=str,
             help="Path to abbreviation.json file",
+        )
+
+        parser.add_argument(
+            "--limit_test_batches",
+            type=int,
+            help="Limit the number of testing batches",
         )
 
     def add_joint_train_args(self, args=None):

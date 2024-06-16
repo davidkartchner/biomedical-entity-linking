@@ -28,7 +28,8 @@ from bioel.models.arboel.biencoder.data.BiEncoderLightningDataModule import (
     read_dataset,
 )
 from bioel.models.arboel.biencoder.model.BiEncoderLightningModule import LitArboel
-
+from datetime import datetime, timedelta
+import torch.distributed as dist
 
 # logger = setup_logger()
 logging.basicConfig(level=logging.INFO)
@@ -57,6 +58,43 @@ def modify(context_input, candidate_input, max_seq_length):
         new_input.append(mod_input)
 
     return torch.LongTensor(new_input)
+
+
+def prepare_data(params):
+    missing_files = any(
+        not os.path.exists(
+            os.path.join(
+                params["biencoder_indices_path"],
+                f"candidates_{data_split}_top64.t7",
+            )
+        )
+        for data_split in ["train", "valid", "test"]
+    )
+
+    # Load the model and process data only if any file is missing
+    if missing_files:
+        device = torch.device(f"cuda:{torch.cuda.current_device()}")
+        MyModel = LitArboel.load_from_checkpoint(
+            checkpoint_path=params["biencoder_checkpoint"]
+        )
+        MyModel.to(device)  # Move to the current device
+        reranker = MyModel.reranker
+
+    for data_split in ["train", "valid", "test"]:
+        fname = os.path.join(
+            params["biencoder_indices_path"],
+            f"candidates_{data_split}_top64.t7",
+        )
+        if not os.path.exists(fname):
+            save_topk_biencoder_cands(
+                bi_reranker=reranker,
+                params=params,
+                logger=logger,
+                bi_tokenizer=AutoTokenizer.from_pretrained(
+                    params["model_name_or_path"]
+                ),
+                topk=64,
+            )
 
 
 def load_data(
@@ -264,39 +302,7 @@ class CrossEncoderDataModule(L.LightningDataModule):
         )
 
     def prepare_data(self):
-
-        missing_files = any(
-            not os.path.exists(
-                os.path.join(
-                    self.hparams["biencoder_indices_path"],
-                    f"candidates_{data_split}_top64.t7",
-                )
-            )
-            for data_split in ["train", "valid", "test"]
-        )
-
-        # Load the model and process data only if any file is missing
-        if missing_files:
-            device = torch.device(f"cuda:{torch.cuda.current_device()}")
-            MyModel = LitArboel.load_from_checkpoint(
-                checkpoint_path=self.hparams["biencoder_checkpoint"]
-            )
-            MyModel.to(device)  # Move to the current device
-            reranker = MyModel.reranker
-
-        for data_split in ["train", "valid", "test"]:
-            fname = os.path.join(
-                self.hparams["biencoder_indices_path"],
-                f"candidates_{data_split}_top64.t7",
-            )
-            if not os.path.exists(fname):
-                save_topk_biencoder_cands(
-                    bi_reranker=reranker,
-                    params=self.hparams,
-                    logger=logger,
-                    bi_tokenizer=self.tokenizer,
-                    topk=64,
-                )
+        pass
 
     def setup(self, stage=None):
         """
