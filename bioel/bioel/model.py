@@ -206,8 +206,8 @@ if __name__ == "__main__":
         name="biobart",
         params_file="/home2/cye73/data_test2/biogenel/ncbi_config.json",
     )
-    biobart_model.training()
-    # biobart_model.inference()
+    # biobart_model.training()
+    biobart_model.inference()
 
     # # krissbert = BioEL_Model.load_krissbert(
     # #     name="krissbert",

@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Optional, Union, Dict
 import time
 import logging
 import json
@@ -44,9 +44,19 @@ class BigBioDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         dataset_name: str,
-        splits: List[str],
+        splits: Optional[List[str]] = ["train", "valid", "test"],
         abbreviations_path=None,
     ):
+        """
+        Parameters
+        ---------
+        - dataset_name: str
+        Name of the dataset to load. Example : "bc5cdr", "ncbi-disease", etc...
+        - splits: List[str]
+        List of splits to load. Default: ["train", "valid", "test"]
+        - abbreviations_path: str
+        Path to the abbreviations dictionary. Default: None
+        """
         self.dataset_name = dataset_name
         self.data = load_bigbio_dataset(dataset_name)
         self.splits = splits
@@ -70,7 +80,7 @@ class BigBioDataset(torch.utils.data.Dataset):
         df["start"] = df["offsets"].map(lambda x: x[0][0])
         df["end"] = df["offsets"].map(lambda x: x[-1][-1])
         df = df[df.split.isin(splits)]
-        print(dataset_name, splits, df.split.unique())
+        # print(dataset_name, splits, df.split.unique())
 
         self.df = df
 
@@ -84,3 +94,5 @@ if __name__ == "__main__":
         "bc5cdr", ["train", "validation", "test"], abbreviations_path
     )
     bc5cdr.data
+    path_to_ontology = "/mitchell/entity-linking/kbs/medic.tsv"
+    ontology = BiomedicalOntology.load_medic(filepath=path_to_ontology, name="medic")

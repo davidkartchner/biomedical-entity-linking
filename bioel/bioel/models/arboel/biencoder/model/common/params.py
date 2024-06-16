@@ -764,7 +764,7 @@ class BlinkParser(argparse.ArgumentParser):
         parser.add_argument(
             "--load_function",
             type=str,
-            help="Function to load ontology, e.g., load_medic, load_mesh, load_umls",
+            help="Function to load ontology, e.g., load_medic, load_mesh, load_umls, etc...",
         )
 
         parser.add_argument(
