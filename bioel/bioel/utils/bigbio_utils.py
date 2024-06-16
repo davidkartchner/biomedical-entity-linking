@@ -414,8 +414,12 @@ def metamap_text_to_candidates(metamap_output):
     return text2candidates
 
 
-def dataset_unique_gene_ids(dataset: str):
+def dataset_unique_tax_ids(dataset: str, entrez):
     """
+    Return a list of unique tax_ids from a dataset
+
+    Parameters
+    ----------
     dataset: str
         Name of the dataset to load
     """
@@ -431,12 +435,19 @@ def dataset_unique_gene_ids(dataset: str):
     # Count the number of unique db_ids
     unique_db_ids = set(all_db_ids)
 
-    logger.info(f"Number of unique db_ids in {dataset} : {len(unique_db_ids)}")
     unique_gene_ids = [
         int(gene_id.replace("NCBIGene:", "")) for gene_id in unique_db_ids
     ]
 
-    return unique_gene_ids
+    unique_tax_id = (
+        entrez[entrez["geneid"].isin(unique_gene_ids)]["tax_id"]
+        .drop_duplicates()
+        .tolist()
+    )
+
+    logger.info(f"Number of unique tax_ids in {dataset} : {len(unique_tax_id)}")
+
+    return unique_tax_id
 
 
 if __name__ == "__main__":
