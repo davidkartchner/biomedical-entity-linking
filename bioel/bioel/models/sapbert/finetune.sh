@@ -1,11 +1,11 @@
 #!/bin/bash
 
-for DATASET in "ncbi_disease" "bc5cdr" "nlmchem" "medmentions_st21pv" "medmentions_full" "nlm_gene" "gnormplus"
-#for DATASET in "medmentions_st21pv" "medmentions_full" 
+#for DATASET in "ncbi_disease" "bc5cdr" "nlmchem" "medmentions_st21pv" "medmentions_full" "nlm_gene" "gnormplus"
+for DATASET in "ncbi_disease"
 do 
-    MODEL_DIR="cambridgeltl/SapBERT-from-PubMedBERT-fulltext"
-    TRAIN_DIR="/mitchell/entity-linking/el-robustness-comparison/data/alias_mappings/${DATASET}_aliases.txt"
-    OUTPUT_DIR="/home/pbathala3/entity_linking/biomedical-entity-linking/bioel/bioel/models/sapbert/finetuned_models_hugging/${DATASET}"
+    MODEL_DIR="/home/pbathala3/entity_linking/biomedical-entity-linking/bioel/bioel/models/sapbert/pretrained_model"
+    TRAIN_DIR="/home/pbathala3/entity_linking/biomedical-entity-linking/bioel/bioel/models/sapbert/data/data_bis/${DATASET}_aliases.txt"
+    OUTPUT_DIR="/home/pbathala3/entity_linking/biomedical-entity-linking/bioel/bioel/models/sapbert/finetuned_models_new_1/${DATASET}"
     MAX_LENGTH=25
     BATCH_SIZE=256
     NUM_EPOCHS=1

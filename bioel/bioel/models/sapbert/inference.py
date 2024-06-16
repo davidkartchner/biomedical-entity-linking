@@ -24,7 +24,10 @@ from bioel.models.sapbert.model.model_wrapper import Model_Wrapper
 LOGGER = logging.getLogger()
 
 def sapbert_collate_fn(batch):
-    mentions = [x["text"] for x in batch]
+    if batch[0]['deabbreviated_text'] is not None:
+        mentions = [x["deabbreviated_text"] for x in batch]
+    else:
+        mentions = [x["text"] for x in batch]
     # labels = [x["cuis"] for x in batch]
     labels = [x["db_ids"] for x in batch]
     metadata = batch
