@@ -81,17 +81,20 @@ if __name__ == "__main__":
     #     ontology_dir = "Y:/mitchell/entity-linking/2017AA/META/", 
     #     ontology_name = "mesh", 
     #     resolve_abbrevs=False)
-    cuis_to_aliases(ontology = BiomedicalOntology.load_medic(filepath="/mitchell/entity-linking/kbs/medic.tsv", name="medic") , save_dir = "data_bis/", dataset_name = "ncbi_disease")
-    cuis_to_aliases(ontology = BiomedicalOntology.load_entrez(filepath="/mitchell/entity-linking/el-robustness-comparison/data/gene_info.tsv", dataset="nlm_gene") , 
+    # cuis_to_aliases(ontology = BiomedicalOntology.load_medic(filepath="/mitchell/entity-linking/kbs/medic.tsv", name="medic") , save_dir = "data_bis/", dataset_name = "ncbi_disease")
+    cuis_to_aliases(ontology = BiomedicalOntology.load_entrez(filepath="/mitchell/entity-linking/el-robustness-comparison/data/gene_info.tsv", dataset="gnormplus") , 
                     save_dir = "data_bis/", dataset_name = "gnormplus")
     cuis_to_aliases(ontology = BiomedicalOntology.load_entrez(filepath="/mitchell/entity-linking/el-robustness-comparison/data/gene_info.tsv", dataset="nlm_gene") , 
                     save_dir = "data_bis/", dataset_name = "nlm_gene")
-    cuis_to_aliases(ontology = BiomedicalOntology.load_mesh(filepath="/mitchell/entity-linking/2017AA/META/", name="mesh"), 
-                    save_dir = "data_bis/", dataset_name = "bc5cdr")
-    cuis_to_aliases(ontology = BiomedicalOntology.load_mesh(filepath="/mitchell/entity-linking/2017AA/META/", name="mesh"), 
-                    save_dir = "data_bis/", dataset_name = "nlm_chem")
+    # cuis_to_aliases(ontology = BiomedicalOntology.load_mesh(filepath="/mitchell/entity-linking/2017AA/META/", name="mesh"), 
+    #                 save_dir = "data_bis/", dataset_name = "bc5cdr")
+    # cuis_to_aliases(ontology = BiomedicalOntology.load_mesh(filepath="/mitchell/entity-linking/2017AA/META/", name="mesh"), 
+    #                 save_dir = "data_bis/", dataset_name = "nlm_chem")
 
-    cuis_to_aliases(ontology = BiomedicalOntology.load_umls(filepath="/mitchell/entity-linking/2017AA/META/", name="umls"), 
-                    save_dir = "data_bis/", dataset_name = "medmentions")
+    # cuis_to_aliases(ontology = BiomedicalOntology.load_umls(filepath="/mitchell/entity-linking/2017AA/META/", name="umls"), 
+    #                 save_dir = "data_bis/", dataset_name = "medmentions_full")
+    
+    # cuis_to_aliases(ontology = BiomedicalOntology.load_umls(filepath="/mitchell/entity-linking/2017AA/META/", name="umls"), 
+    #                 save_dir = "data_bis/", dataset_name = "medmentions_st21pv")
     
     #onto = BiomedicalOntology.load_entrez(filepath="/mitchell/entity-linking/el-robustness-comparison/data/gene_info.tsv", dataset="gnormplus")

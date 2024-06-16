@@ -22,6 +22,7 @@ from bioel.utils.bigbio_utils import (
     CUIS_TO_EXCLUDE,
     CUIS_TO_REMAP,
     resolve_abbreviation,
+    add_deabbreviations,
 )
 
 from transformers import AutoTokenizer
@@ -79,6 +80,8 @@ class DictionaryDataset:
             lines = f.readlines()
             for line in tqdm(lines):
                 line = line.strip()
+                if not line or len(line.split("||")) != 2:
+                    continue
                 if line == "":
                     continue
                 cui, name = line.split("||")
@@ -93,6 +96,39 @@ class DictionaryDataset:
         # data = np.array(data)
         data = [(name, "|".join(cuis)) for name, cuis in data_dict.items()]
         return data
+
+class SapBertDictionaryDataset(Dataset):
+    def __init__(self, dictionary_path: str):
+        logger.info("Loading from the Alias Mapping of the Dataset")
+        self.data = self.read_examples(dictionary_path)
+
+    
+    def read_examples(self, dictionary_path):
+        """
+        Read examples from the file
+        """
+        with open(dictionary_path, "r") as f:
+            lines = f.read().split("\n")
+        
+        # Construt the UMLS Dict for finetuning the model
+        umls_dict = {}
+        for line in tqdm(lines, desc="Reading examples from the file"):
+            if not line or len(line.split("||")) != 2:
+                continue
+            cui, name = line.split("||")
+            name = name.lower()
+            if cui in umls_dict:
+                umls_dict[cui].add(name)
+            else:
+                umls_dict[cui] = set([name])
+        
+        for key, value in umls_dict.items():
+            umls_dict[key] = list(value)
+        
+        return umls_dict
+        
+
+        
     
 class SapBertBigBioDataset(Dataset):
     def __init__(
@@ -112,7 +148,8 @@ class SapBertBigBioDataset(Dataset):
         # Resolve abbreviations if desired
         self.resolve_abbreviations = resolve_abbreviations
         if self.resolve_abbreviations:
-            self.abbreviations = ujson.load(open(path_to_abbreviation_dict, "r"))
+            self.data = add_deabbreviations(self.data, path_to_abbreviation_dict)
+        #     self.abbreviations = ujson.load(open(path_to_abbreviation_dict, "r"))
 
         self.cuis_to_exclude = CUIS_TO_EXCLUDE[dataset_name]
         self.cuis_to_remap = CUIS_TO_REMAP[dataset_name]
@@ -132,10 +169,10 @@ class SapBertBigBioDataset(Dataset):
             entity_remapping_dict=self.cuis_to_remap,
             cuis_to_exclude=self.cuis_to_exclude,
         )
-        if self.resolve_abbreviations:
-            df["text"] = df[["document_id", "text"]].apply(
-                lambda x: resolve_abbreviation(x[0], x[1], self.abbreviations), axis=1
-            )
+        # if self.resolve_abbreviations:
+        #     df["text"] = df[["document_id", "text"]].apply(
+        #         lambda x: resolve_abbreviation(x[0], x[1], self.abbreviations), axis=1
+        #     )
         self.flat_instances = df.to_dict(orient="records")
 
     
@@ -173,6 +210,7 @@ class MetricLearningDataset_pairwise(Dataset):
                 query_id, name1, name2 = line.split("||")
                 self.query_ids.append(query_id)
                 self.query_names.append((name1, name2))
+        print("Lengths of the dataset: ", len(self.query_ids), len(self.query_names))
         self.tokenizer = tokenizer
         self.query_id_2_index_id = {k: v for v, k in enumerate(list(set(self.query_ids)))}
     
