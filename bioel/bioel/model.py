@@ -1,7 +1,7 @@
-# from bioel.models.arboel.biencoder.model.BiEncoderLightningModule import LitArboel
-# from bioel.models.arboel.crossencoder.model.CrossEncoderLightningModule import (
-#     LitCrossEncoder,
-# )
+from bioel.models.arboel.biencoder.model.BiEncoderLightningModule import LitArboel
+from bioel.models.arboel.crossencoder.model.CrossEncoderLightningModule import (
+    LitCrossEncoder,
+)
 from bioel.models.arboel.biencoder.model.common.params import BlinkParser
 from bioel.models.krissbert.model.model import Krissbert
 from bioel.models.biogenel.LightningModule import BioGenElLightningModule
@@ -26,93 +26,93 @@ class BioEL_Model:
         )
         self.params = params  # model arguments for training and inferencing
 
-    # @classmethod
-    # def load_arboel_biencoder(cls, name, params_file, checkpoint_path=None):
-    #     # Check if params_file is a path or a dictionary
-    #     if isinstance(params_file, str) and os.path.isfile(params_file):
-    #         with open(params_file, "r") as f:
-    #             json_params = json.load(f)
-    #     elif isinstance(params_file, dict):
-    #         json_params = params_file
-    #     else:
-    #         raise TypeError("params_file must be a valid file path or a dictionary")
+    @classmethod
+    def load_arboel_biencoder(cls, name, params_file, checkpoint_path=None):
+        # Check if params_file is a path or a dictionary
+        if isinstance(params_file, str) and os.path.isfile(params_file):
+            with open(params_file, "r") as f:
+                json_params = json.load(f)
+        elif isinstance(params_file, dict):
+            json_params = params_file
+        else:
+            raise TypeError("params_file must be a valid file path or a dictionary")
 
-    #     parser = BlinkParser(add_model_args=True)
-    #     parser.add_training_args()
-    #     parser.add_eval_args()
+        parser = BlinkParser(add_model_args=True)
+        parser.add_training_args()
+        parser.add_eval_args()
 
-    #     # Set default values and remove required flag for params in JSON
-    #     for action in parser._actions:
-    #         if action.dest in json_params:
-    #             parser.set_defaults(**{action.dest: json_params[action.dest]})
-    #             action.required = False
+        # Set default values and remove required flag for params in JSON
+        for action in parser._actions:
+            if action.dest in json_params:
+                parser.set_defaults(**{action.dest: json_params[action.dest]})
+                action.required = False
 
-    #     # Parse arguments
-    #     args = parser.parse_args()
-    #     params = vars(args)
-    #     params.update(json_params)
+        # Parse arguments
+        args = parser.parse_args()
+        params = vars(args)
+        params.update(json_params)
 
-    #     if checkpoint_path:
-    #         model = LitArboel.load_from_checkpoint(
-    #             checkpoint_path=checkpoint_path, params=params
-    #         )
-    #     else:
-    #         model = LitArboel(params=params)
+        if checkpoint_path:
+            model = LitArboel.load_from_checkpoint(
+                checkpoint_path=checkpoint_path, params=params
+            )
+        else:
+            model = LitArboel(params=params)
 
-    #     train_script_path = f"bioel/models/arboel/biencoder/train_biencoder.py"
-    #     evaluate_script_path = f"bioel/models/arboel/biencoder/evaluate_biencoder.py"
-    #     return cls(
-    #         model,
-    #         name,
-    #         train_script_path,
-    #         evaluate_script_path,
-    #         params,
-    #     )
+        train_script_path = f"bioel/models/arboel/biencoder/train_biencoder.py"
+        evaluate_script_path = f"bioel/models/arboel/biencoder/evaluate_biencoder.py"
+        return cls(
+            model,
+            name,
+            train_script_path,
+            evaluate_script_path,
+            params,
+        )
 
-    # @classmethod
-    # def load_arboel_crossencoder(cls, name, params_file, checkpoint_path=None):
-    #     # Check if params_file is a path or a dictionary
-    #     if isinstance(params_file, str) and os.path.isfile(params_file):
-    #         with open(params_file, "r") as f:
-    #             json_params = json.load(f)
-    #     elif isinstance(params_file, dict):
-    #         json_params = params_file
-    #     else:
-    #         raise TypeError("params_file must be a valid file path or a dictionary")
+    @classmethod
+    def load_arboel_crossencoder(cls, name, params_file, checkpoint_path=None):
+        # Check if params_file is a path or a dictionary
+        if isinstance(params_file, str) and os.path.isfile(params_file):
+            with open(params_file, "r") as f:
+                json_params = json.load(f)
+        elif isinstance(params_file, dict):
+            json_params = params_file
+        else:
+            raise TypeError("params_file must be a valid file path or a dictionary")
 
-    #     parser = BlinkParser(add_model_args=True)
-    #     parser.add_training_args()
-    #     parser.add_eval_args()
+        parser = BlinkParser(add_model_args=True)
+        parser.add_training_args()
+        parser.add_eval_args()
 
-    #     # Set default values and remove required flag for params in JSON
-    #     for action in parser._actions:
-    #         if action.dest in json_params:
-    #             parser.set_defaults(**{action.dest: json_params[action.dest]})
-    #             action.required = False
+        # Set default values and remove required flag for params in JSON
+        for action in parser._actions:
+            if action.dest in json_params:
+                parser.set_defaults(**{action.dest: json_params[action.dest]})
+                action.required = False
 
-    #     # Parse arguments
-    #     args = parser.parse_args()
-    #     params = vars(args)
-    #     params.update(json_params)
+        # Parse arguments
+        args = parser.parse_args()
+        params = vars(args)
+        params.update(json_params)
 
-    #     if checkpoint_path:
-    #         model = LitCrossEncoder.load_from_checkpoint(
-    #             checkpoint_path=checkpoint_path, params=params
-    #         )
-    #     else:
-    #         model = LitCrossEncoder(params=params)
+        if checkpoint_path:
+            model = LitCrossEncoder.load_from_checkpoint(
+                checkpoint_path=checkpoint_path, params=params
+            )
+        else:
+            model = LitCrossEncoder(params=params)
 
-    #     train_script_path = f"bioel/models/arboel/crossencoder/train_crossencoder.py"
-    #     evaluate_script_path = (
-    #         f"bioel/models/arboel/crossencoder/evaluate_crossencoder.py"
-    #     )
-    #     return cls(
-    #         model,
-    #         name,
-    #         train_script_path,
-    #         evaluate_script_path,
-    #         params,
-    #     )
+        train_script_path = f"bioel/models/arboel/crossencoder/train_crossencoder.py"
+        evaluate_script_path = (
+            f"bioel/models/arboel/crossencoder/evaluate_crossencoder.py"
+        )
+        return cls(
+            model,
+            name,
+            train_script_path,
+            evaluate_script_path,
+            params,
+        )
 
     @classmethod
     def load_sapbert(cls, name, params_file = None):
