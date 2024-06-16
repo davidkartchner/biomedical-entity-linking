@@ -597,7 +597,7 @@ class BiomedicalOntology:
             metadata[concept["concept_id"]] = index
             index += 1
             if concept["concept_id"] in entities:
-                logger.warning(f"Duplicate CUI {concept["concept_id"]} found in ontology.  Skipping.")
+                logger.warning(f"Duplicate CUI {concept['concept_id']} found in ontology.  Skipping.")
                 continue
             elif 'definition' in concept:
                 entities[concept["concept_id"]] = BiomedicalEntity(concept["concept_id"], concept["canonical_name"], concept["types"], concept["aliases"], concept["definition"])

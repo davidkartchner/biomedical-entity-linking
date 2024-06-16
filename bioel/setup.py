@@ -70,6 +70,7 @@ setup(
         "scispacy",
         "fairseq",
         "accelerate",
+        "pytorch_metric_learning",
     ],
     ext_modules=cythonize(cython_extensions),
     include_package_data=True,
