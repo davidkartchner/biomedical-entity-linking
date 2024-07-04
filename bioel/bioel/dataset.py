@@ -94,5 +94,4 @@ if __name__ == "__main__":
         "bc5cdr", ["train", "validation", "test"], abbreviations_path
     )
     bc5cdr.data
-    path_to_ontology = "/mitchell/entity-linking/kbs/medic.tsv"
-    ontology = BiomedicalOntology.load_medic(filepath=path_to_ontology, name="medic")
+

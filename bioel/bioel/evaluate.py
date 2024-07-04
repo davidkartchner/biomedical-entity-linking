@@ -170,6 +170,22 @@ def add_candidates_to_df(df, candidate_dict, new_col_name, eval_col="text"):
     )
 
 
+def correct_medlinker_candidates(medlinker_output):
+    for x in medlinker_output:
+        new_candidates = []
+        for y in x["candidates"]:
+            single_candidate = []
+            for c in y:
+                if c is None:
+                    continue
+                if not c.startswith("MESH") and not c.startswith("OMIM"):
+                    c = c.replace("ESH", "MESH")
+                single_candidate.append(c)
+            new_candidates.append(single_candidate)
+        x["candidates"] = new_candidates
+    return medlinker_output
+
+
 def list_flatten(nested_list):
     used = set([])
     flattened = []
@@ -265,22 +281,6 @@ def plot_recall_at_k(
     #     plt.legend()
 
 
-def correct_medlinker_candidates(medlinker_output):
-    for x in medlinker_output:
-        new_candidates = []
-        for y in x["candidates"]:
-            single_candidate = []
-            for c in y:
-                if c is None:
-                    continue
-                if not c.startswith("MESH") and not c.startswith("OMIM"):
-                    c = c.replace("ESH", "MESH")
-                single_candidate.append(c)
-            new_candidates.append(single_candidate)
-        x["candidates"] = new_candidates
-    return medlinker_output
-
-
 class Evaluate:
     def __init__(
         self, dataset_names, model_names, path_to_result, abbreviations_path=None
@@ -315,7 +315,8 @@ class Evaluate:
         self.model_names = model_names
         self.path_to_result = path_to_result
         self.abbreviations_path = abbreviations_path
-        self.full_results = {}
+        self.data = {}  # df for each dataset
+        self.full_results = defaultdict(dict)  # df will
         self.datasets = {}
         self.error_analysis_dfs = {}
         self.recall_all_eval_strategies = {}
@@ -407,7 +408,7 @@ class Evaluate:
                 )
 
             df = df[df["split"] == "test"].reset_index(drop=True)
-            self.full_results[name] = df
+            self.data[name] = df
 
     def evaluate(self, eval_strategies=["basic", "relaxed", "strict"]):
         """
@@ -424,6 +425,7 @@ class Evaluate:
             A list of evaluation strategies to be used (default is ["basic", "relaxed", "strict"]).
 
         """
+        self.full_results = defaultdict(dict)  # Initialize as defaultdict
         use_resolved_abbrevs = True if self.abbreviations_path else False
         for eval_strategy in tqdm(eval_strategies):
             all_recall = {}
@@ -432,7 +434,8 @@ class Evaluate:
             dfs_one_eval_strategy = {}
             for name in self.dataset_names:
                 print(name)
-                df = self.full_results[name]
+                self.full_results[eval_strategy][name] = self.data[name].copy()
+                df = self.full_results[eval_strategy][name]
                 recall_dict = {}
                 for model in self.model_names:
                     if model in df.columns:
@@ -502,6 +505,7 @@ class Evaluate:
             A list of evaluation strategies to be used (default is ['basic', 'relaxed', 'strict']).
 
         """
+
         # Define a color palette
         palette = sns.color_palette(
             "husl", len(self.model_names)
@@ -543,7 +547,7 @@ class Evaluate:
 
             for idx, name in enumerate(self.dataset_names):
                 recall_dict = all_recall[name]
-                df = self.full_results[name]
+                df = self.full_results[eval_strategy][name]
 
                 ax = axs[idx]
                 ax.title.set_text(dataset_to_pretty_name.get(name, name))

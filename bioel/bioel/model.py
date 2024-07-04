@@ -5,9 +5,7 @@ from bioel.models.arboel.crossencoder.model.CrossEncoderLightningModule import (
 from bioel.models.arboel.biencoder.model.common.params import BlinkParser
 from bioel.models.krissbert.model.model import Krissbert
 from bioel.models.biogenel.LightningModule import BioGenElLightningModule
-from bioel.models.sapbert.model.metric_learning import Sap_Metric_Learning
-from bioel.models.sapbert.model.model_wrapper import Model_Wrapper
-from bioel.models.sapbert.train import parse_args
+
 import json
 import importlib
 import argparse
@@ -115,31 +113,8 @@ class BioEL_Model:
         )
 
     @classmethod
-    def load_sapbert(cls, name, params_file = None):
-        if isinstance(params_file, str) and os.path.isfile(params_file):
-            with open(params_file, "r") as f:
-                json_params = json.load(f)
-        elif isinstance(params_file, dict):
-            json_params = params_file
-        else:
-            raise TypeError("params_file must be a valid file path or a dictionary")
-        
-        params = parse_args(json_params)
-        
-        model_wrapper = Model_Wrapper()
-
-        train_script_path = f"bioel/models/sapbert/train.py"
-        evaluate_script_path = f"bioel/models/sapbert/evaluate.py"
-
-        return cls(
-            model_wrapper, 
-            name,
-            train_script_path,
-            evaluate_script_path, 
-            params,
-        )
-        
-
+    def load_sapbert(cls, name, params):
+        pass
 
     @classmethod
     def load_krissbert(cls, name, params_file, checkpoint_path=None):
@@ -161,8 +136,8 @@ class BioEL_Model:
 
     @classmethod
     def load_scispacy(cls, name, params_file):
-        # No traditional model object, just a string identifier
-        model = "scispacy"  # Identifier for scispacy
+        # No model object, just a string identifier
+        model = "scispacy"
         train_script_path = None  # ScispaCy does not require training
         evaluate_script_path = "bioel/models/scispacy/evaluate.py"
 
@@ -202,7 +177,7 @@ class BioEL_Model:
         else:
             module_name = self.train_script_path.replace("/", ".").rsplit(".", 1)[0]
             train_module = importlib.import_module(module_name)
-            train_module.train_model(self.params, self.model)
+            train_module.train_model(params=self.params, model=self.model)
 
     def inference(self):
         module_name = self.evaluate_script_path.replace("/", ".").rsplit(".", 1)[0]
@@ -226,19 +201,21 @@ class Config:
 
 
 if __name__ == "__main__":
-    print("Start work on biobart")
+    print("Start work on arboel_biencoder")
+    arboel_biencoder_model = BioEL_Model.load_arboel_biencoder(
+        name="arboel_biencoder",
+        params_file="/home2/cye73/data_test2/arboel/medmentions_st21pv/params_biencoder.json",
+    )
+    arboel_biencoder_model.training()
+    arboel_biencoder_model.inference()
+
+    # print("Start work on biobart")
     # biobart_model = BioEL_Model.load_biobart(
     #     name="biobart",
     #     params_file="/home2/cye73/data_test2/biogenel/ncbi_config.json",
     # )
     # biobart_model.training()
     # biobart_model.inference()
-    sapbert_model = BioEL_Model.load_sapbert(
-        name = "sapbert",
-        params_file= "/home/pbathala3/entity_linking/config.json",
-    )
-    #sapbert_model.training()
-    sapbert_model.inference()
 
     # # krissbert = BioEL_Model.load_krissbert(
     # #     name="krissbert",
