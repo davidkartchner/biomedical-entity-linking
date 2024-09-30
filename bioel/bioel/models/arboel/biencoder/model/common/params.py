@@ -496,6 +496,13 @@ class BlinkParser(argparse.ArgumentParser):
             type=int,
             help="Limit the number of training batches",
         )
+        
+        parser.add_argument(
+            "--path_st21pv_cui",
+            type=str,
+            help="Path to st21pv cuis subset for umls",
+        )
+        
 
     def add_eval_args(self, args=None):
         """

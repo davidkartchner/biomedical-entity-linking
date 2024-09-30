@@ -11,6 +11,8 @@ import os
 from tqdm.auto import tqdm
 from collections import defaultdict
 from matplotlib import pyplot as plt
+import pandas as pd
+from scipy.stats import chi2_contingency
 
 from bioel.utils.bigbio_utils import (
     load_bigbio_dataset,
@@ -207,7 +209,9 @@ def min_hit_index(gold_cuis, candidates, eval_mode):
         return 1000000
 
     if eval_mode == "basic":
-        flat_candidates = list_flatten(candidates)
+        flat_candidates = list_flatten(
+            candidates
+        )  # Flatten list of lists to find the correct hit index (and not consider several cuis for one test)
         for i, c in enumerate(flat_candidates):
             if c in gold_cuis:
                 return i
@@ -283,7 +287,13 @@ def plot_recall_at_k(
 
 class Evaluate:
     def __init__(
-        self, dataset_names, model_names, path_to_result, abbreviations_path=None
+        self,
+        dataset_names,
+        model_names,
+        path_to_result,
+        eval_strategies=["basic", "relaxed", "strict"],
+        abbreviations_path=None,
+        **kwargs,
     ):
         """
         Parameters
@@ -310,16 +320,25 @@ class Evaluate:
             }
         abbreviations_path : str
             The path to the JSON file containing abbreviations to be used for processing the datasets.
+        eval_strategies : list of str, optional
+            A list of evaluation strategies to be used (default is ["basic", "relaxed", "strict"]).
         """
         self.dataset_names = dataset_names
         self.model_names = model_names
         self.path_to_result = path_to_result
         self.abbreviations_path = abbreviations_path
+        self.eval_strategies = eval_strategies
         self.data = {}  # df for each dataset
-        self.full_results = defaultdict(dict)  # df will
+        self.full_results = defaultdict(dict)
         self.datasets = {}
-        self.error_analysis_dfs = {}
-        self.recall_all_eval_strategies = {}
+        self.error_analysis_dfs = {}  # Results with hit_index for error analysis
+        self.recall_all_eval_strategies = (
+            {}
+        )  # Recall@k for all eval strategies, datasets, and models
+        self.detailed_results_analysis = (
+            {}
+        )  # Detailed results for failure stage, statistical significance (p_values, chi2), accuracy per type, recall@k per type
+        self.max_k = kwargs.get("max_k", 10)
 
     def load_results(self):
         """
@@ -410,7 +429,7 @@ class Evaluate:
             df = df[df["split"] == "test"].reset_index(drop=True)
             self.data[name] = df
 
-    def evaluate(self, eval_strategies=["basic", "relaxed", "strict"]):
+    def evaluate(self, eval_strategies=None):
         """
         Evaluates the performance of models on each dataset using different evaluation strategies.
 
@@ -425,6 +444,7 @@ class Evaluate:
             A list of evaluation strategies to be used (default is ["basic", "relaxed", "strict"]).
 
         """
+        eval_strategies = eval_strategies if eval_strategies else self.eval_strategies
         self.full_results = defaultdict(dict)  # Initialize as defaultdict
         use_resolved_abbrevs = True if self.abbreviations_path else False
         for eval_strategy in tqdm(eval_strategies):
@@ -441,11 +461,18 @@ class Evaluate:
                     if model in df.columns:
                         if model == "scispacy":
                             recall_dict[model] = recall_at_k(
-                                df, model, eval_mode=eval_strategy, gold_col="db_ids"
+                                df,
+                                model,
+                                eval_mode=eval_strategy,
+                                gold_col="db_ids",
+                                max_k=self.max_k,
                             )
                         else:
                             recall_dict[model] = recall_at_k(
-                                df, model, eval_mode=eval_strategy
+                                df,
+                                model,
+                                eval_mode=eval_strategy,
+                                max_k=self.max_k,
                             )
 
                         if model + "_resolve_abbrev" in df.columns:
@@ -456,10 +483,14 @@ class Evaluate:
                                     cand_col,
                                     eval_mode=eval_strategy,
                                     gold_col="db_ids",
+                                    max_k=self.max_k,
                                 )
                             else:
                                 deabbrev_recall = recall_at_k(
-                                    df, cand_col, eval_mode=eval_strategy
+                                    df,
+                                    cand_col,
+                                    eval_mode=eval_strategy,
+                                    max_k=self.max_k,
                                 )
                             if use_resolved_abbrevs:
                                 recall_dict[model] = deabbrev_recall
@@ -489,7 +520,7 @@ class Evaluate:
             self.error_analysis_dfs[eval_strategy] = dfs_one_eval_strategy
             self.recall_all_eval_strategies[eval_strategy] = all_recall
 
-    def plot_results(self, eval_strategies=["basic", "relaxed", "strict"]):
+    def plot_results(self, eval_strategies=None):
         """
         Plots recall@k for each model and dataset using different evaluation strategies.
 
@@ -505,7 +536,7 @@ class Evaluate:
             A list of evaluation strategies to be used (default is ['basic', 'relaxed', 'strict']).
 
         """
-
+        eval_strategies = eval_strategies if eval_strategies else self.eval_strategies
         # Define a color palette
         palette = sns.color_palette(
             "husl", len(self.model_names)
@@ -561,6 +592,7 @@ class Evaluate:
                             ax=ax,
                             color=model_to_color[model],
                             alpha=0.7,
+                            max_k=self.max_k,
                         )
 
                 print(f"{dataset_to_pretty_name.get(name, name)=}")
@@ -583,3 +615,188 @@ class Evaluate:
                 fontsize=16,
             )
             plt.show()
+
+    def detailed_results(self, k=None, eval_strategies=None):
+        """
+        Returns detailed results for further analysis : accuracy per type, recall@k per type, failure stage, statistical significance (p_values, chi2)
+        The results are stored in the attribute detailed_results_analysis and is a nested dictionary with the following structure:
+        self.detailed_results_analysis[eval_strat][dataset_name][model_name][feature]
+        - eval_strat : evaluation strategy (e.g. basic, relaxed, strict)
+        - dataset_name : name of the dataset (e.g. bc5cdr, ncbi_disease, nlmchem)
+        - model_name : name of the model (e.g. arboEL, krissbert)
+        - feature : feature of interest (count_miss_CG_per_type, count_miss_NED_per_type, count_success_per_type, count_hit_k_per_type, mentions_count_per_type, accuracy_per_type, recall_k_per_type, failure_stage_CG, failure_stage_NED, contingency_table_CG, contingency_table_NED, ChiSquare_test_NED, ChiSquare_test_CG)
+        """
+        k = k if k else self.max_k
+        eval_strategies = eval_strategies if eval_strategies else self.eval_strategies
+        resolve_abbrev = True if self.abbreviations_path else False
+        for eval_strat in eval_strategies:
+            self.detailed_results_analysis[eval_strat] = {}
+            for dataset_name in self.dataset_names:
+                self.detailed_results_analysis[eval_strat][dataset_name] = {}
+
+                for model_name in self.model_names:
+                    if (
+                        model_name
+                        not in self.error_analysis_dfs[eval_strat][
+                            dataset_name
+                        ].columns  # Check if the model has been evaluated on the dataset
+                    ):
+                        print(
+                            f"Skipping model {model_name} for dataset {dataset_name} because the column doesn't exist."
+                        )
+                        continue
+
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ] = {}
+
+                    df = self.error_analysis_dfs[eval_strat][dataset_name]
+                    # Convert the 'type' column to strings
+                    df["type"] = df["type"].apply(str)
+
+                    name = model_name
+                    if resolve_abbrev:
+                        name += "_resolve_abbrev"
+                    print(f"Processing {name}")
+
+                    # Number of mentions where failure happened at CG step per type
+                    count_miss_CG_per_type = (
+                        df[df[name] == 1000000].groupby("type").size()
+                    )
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ][
+                        "count_miss_CG_per_type"
+                    ] = (
+                        count_miss_CG_per_type.to_frame().reset_index()
+                    )  # pandas series to dataframe + reset index (not aligned otherwise)
+
+                    # Number of mentions where failure happened at NED step per type
+                    count_miss_NED_per_type = (
+                        df[(df[name] != 1000000) & (df[name] != 0)]
+                        .groupby("type")
+                        .size()
+                    )
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ][
+                        "count_miss_NED_per_type"
+                    ] = (
+                        count_miss_NED_per_type.to_frame().reset_index()
+                    )  # pandas series to dataframe + reset index (not aligned otherwise)
+
+                    # Number of correctly linked mentions for each type
+                    count_success_per_type = df[df[name] == 0].groupby("type").size()
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ][
+                        "count_success_per_type"
+                    ] = count_success_per_type.to_frame().reset_index()
+
+                    # Number of mentions with hit_index < k (recall@k) per type
+                    count_hit_k_per_type = df[df[name] < k].groupby("type").size()
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ][
+                        "count_hit_k_per_type"
+                    ] = count_hit_k_per_type.to_frame().reset_index()
+
+                    # Total number of mentions for each type
+                    mentions_count_per_type = df["type"].value_counts()
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ][
+                        "mentions_count_per_type"
+                    ] = mentions_count_per_type.to_frame().reset_index()
+
+                    # Accuracy for each type
+                    accuracy_per_type = (
+                        count_success_per_type / mentions_count_per_type
+                    ).fillna(0)
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ]["accuracy_per_type"] = accuracy_per_type.to_frame().reset_index()
+
+                    # recall@k for each type
+                    recall_k_per_type = (
+                        count_hit_k_per_type / mentions_count_per_type
+                    ).fillna(0)
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ]["recall_k_per_type"] = recall_k_per_type.to_frame().reset_index()
+
+                    # Failure from CG stage
+                    failure_stage_CG = count_miss_CG_per_type.sum() / (
+                        count_miss_CG_per_type.sum() + count_miss_NED_per_type.sum()
+                    )
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ]["failure_stage_CG"] = failure_stage_CG
+
+                    # Failure from NED stage
+                    failure_stage_NED = count_miss_NED_per_type.sum() / (
+                        count_miss_CG_per_type.sum() + count_miss_NED_per_type.sum()
+                    )
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ]["failure_stage_NED"] = failure_stage_NED
+
+                    # print(f"Number of mentions where the CG step failed for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {count_miss_CG}")
+                    # print(f"Number of mentions where the NED step failed for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {count_miss_NED}")
+                    # print(f"Number of of correctly linked mentions for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {count_success}")
+                    # print(f"Number of mentions with hit_index < k for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {count_hit_k}")
+                    # print(f"Accuracy per type for model {model_name} on dataset {name} with eval strategy {eval_strat} : {accuracy_per_type}")
+                    # print(f"Recall@k per type for model {model_name} on dataset {name} with eval strategy {eval_strat} : {recall_k_per_type}")
+                    # print(" '%' of mentions for which linking failed in CG for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : ", failure_stage_CG)
+                    # print(" '%' of mentions for which linking failed in NED for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : ", failure_stage_NED)
+
+                    # Create a new column candidate generation 'CG' to indicate if the correct cui is among the candidates (1) or not (0)
+                    df["CG"] = df[name].apply(lambda x: 1 if x != 1000000 else 0)
+                    # Create a new column Named Entity Disambiguation 'NED' to indicate if the prediction was correct (1) or incorrect (0)
+                    df["NED"] = df[name].apply(lambda x: 1 if x == 0 else 0)
+                    # Explode the list so that an entity is counted for each type it belongs to
+                    df_exploded = df.explode("type")
+
+                    # Create contingency tables
+                    contingency_table_CG = pd.crosstab(
+                        df_exploded["type"], df_exploded["CG"]
+                    )
+                    contingency_table_NED = pd.crosstab(
+                        df_exploded["type"], df_exploded["NED"]
+                    )
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ]["contingency_table_CG"] = contingency_table_CG
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ]["contingency_table_NED"] = contingency_table_NED
+
+                    # Perform the Chi-square test
+                    chi2_NED, p_value_NED, dof_NED, expected_NED = chi2_contingency(
+                        contingency_table_NED
+                    )
+                    chi2_CG, p_value_CG, dof_CG, expected_CG = chi2_contingency(
+                        contingency_table_CG
+                    )
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ]["ChiSquare_test_NED"] = chi2_contingency(contingency_table_NED)
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ]["ChiSquare_test_CG"] = chi2_contingency(contingency_table_CG)
+
+                    # # # Print results
+                    # # print("Results for success in CG step:")
+                    # # print(f"Degree of freedom (dof) = number of different classes : {dof_CG}")
+                    # # # observed vs expected frequencies
+                    # # # If observed < expected, then there is a statistical difference for the class
+                    # # print(f"Expected frequencies table :{expected_CG}")
+                    # print(f"Chi-square statistic for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {chi2_CG}")
+                    # print(f"P-value for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {p_value_CG}")
+
+                    # print('-'*50)
+                    # # print("Results for succes in NED step:")
+                    # # print(f"Degree of freedom (dof) = number of different classes : {dof_NED}")
+                    # # print(f"Expected frequencies table :{expected_NED}")
+                    # print(f"Chi-square statistic for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {chi2_NED}")
+                    # print(f"P-value for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {p_value_NED}")

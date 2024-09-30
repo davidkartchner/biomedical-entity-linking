@@ -201,13 +201,22 @@ class Config:
 
 
 if __name__ == "__main__":
-    print("Start work on arboel_biencoder")
-    arboel_biencoder_model = BioEL_Model.load_arboel_biencoder(
-        name="arboel_biencoder",
-        params_file="/home2/cye73/data_test2/arboel/medmentions_st21pv/params_biencoder.json",
+    # print("Start work on arboel_biencoder")
+    # arboel_biencoder_model = BioEL_Model.load_arboel_biencoder(
+    #     name="arboel_biencoder",
+    #     params_file="/home2/cye73/data_test2/arboel/medmentions_st21pv/params_biencoder.json",
+    # )
+    # arboel_biencoder_model.training()
+    # arboel_biencoder_model.inference()
+
+    print("Start work on arboel_crossencoder")
+    arboel_crossencoder_model = BioEL_Model.load_arboel_crossencoder(
+        name="arboel_bcrossencoder",
+        params_file="/home2/cye73/data_test2/arboel/medmentions_st21pv/params_crossencoder.json",
+        # checkpoint_path="/home2/cye73/results2/arboel/medmentions_st21pv/crossencoder_2024-09-25_13-22-32-epoch=1-Accuracy=0.89.ckpt",
     )
-    arboel_biencoder_model.training()
-    arboel_biencoder_model.inference()
+    arboel_crossencoder_model.training()
+    arboel_crossencoder_model.inference()
 
     # print("Start work on biobart")
     # biobart_model = BioEL_Model.load_biobart(

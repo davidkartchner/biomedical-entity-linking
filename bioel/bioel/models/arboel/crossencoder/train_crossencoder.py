@@ -35,12 +35,8 @@ def train_model(params, model):
     wandb_logger = WandbLogger(project=params["experiment"])
 
     trainer = L.Trainer(
-        limit_train_batches=(
-            params["limit_train_batches"] if params["limit_train_batches"] else 1.0
-        ),
-        limit_val_batches=(
-            params["limit_val_batches"] if params["limit_val_batches"] else 20
-        ),
+        limit_train_batches=params.get("limit_train_batches", 1.0),
+        limit_val_batches=params.get("limit_val_batches", 20),
         # num_sanity_val_steps=0,
         max_epochs=params["num_train_epochs"],
         devices=params["devices"],
