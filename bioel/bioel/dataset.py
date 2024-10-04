@@ -36,8 +36,8 @@ class Mention:
     start: int
     end: int
     text: str
-    types: str
-    deabbreviated_text: str
+    types: List[str]
+    deabbreviated_text: Optional[str]
 
 
 class BigBioDataset(torch.utils.data.Dataset):
@@ -94,4 +94,3 @@ if __name__ == "__main__":
         "bc5cdr", ["train", "validation", "test"], abbreviations_path
     )
     bc5cdr.data
-

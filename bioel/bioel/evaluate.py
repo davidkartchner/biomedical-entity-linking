@@ -285,6 +285,72 @@ def plot_recall_at_k(
     #     plt.legend()
 
 
+def precision_at_k_DK(df, hit_column, k):
+    """
+    Calculates Precision@k for a given DataFrame and value of k. (David's version)
+    ---------
+    df : pandas.DataFrame
+        DataFrame containing the results of the model.
+    hit_column : str
+        Name of the column containing the hit index.
+    k : int
+        Value of k.
+    """
+    hits_within_k = df[hit_column] <= (k - 1)
+    precision = hits_within_k.sum() / len(df)
+    return precision
+
+
+def precision_at_k(df, hit_column, k):
+    """
+    Calculates Precision@k for a given DataFrame and value of k.
+    ---------
+    df : pandas.DataFrame
+        DataFrame containing the results of the model.
+    hit_column : str
+        Name of the column containing the hit index.
+    k : int
+        Value of k.
+    """
+    precision_sum = 0
+    for hit_index in df[hit_column]:
+        if hit_index < k:
+            precision_sum += 1 / k
+    precision_at_k = precision_sum / len(df)
+    return precision_at_k
+
+
+def average_precision_at_k(hit_index, k):
+    """
+    Calculates Average Precision@k for a single query (mention).
+    --------
+    hit_index : int
+        Index of the first hit.
+    k : int
+    """
+    if hit_index <= (k - 1):  # Relevant item is within top k
+        return 1 / (
+            hit_index + 1
+        )  # Precision at the position where the relevant item is found
+    else:
+        return 0
+
+
+def mean_average_precision_at_k(df, hit_column, k):
+    """
+    Calculates MAP@k for the entire DataFrame.
+    --------
+    df : pandas.DataFrame
+        DataFrame containing the results of the model.
+    hit_column : str
+        Name of the column containing the hit index.
+    k : int
+    """
+    average_precisions = df[hit_column].apply(lambda x: average_precision_at_k(x, k))
+    map_k = average_precisions.mean()  # Average over all queries
+    return map_k
+
+
 class Evaluate:
     def __init__(
         self,
@@ -783,7 +849,7 @@ class Evaluate:
                     ]["ChiSquare_test_NED"] = chi2_contingency(contingency_table_NED)
                     self.detailed_results_analysis[eval_strat][dataset_name][
                         model_name
-                    ]["ChiSquare_test_CG"] = chi2_contingency(contingency_table_CG)
+                    ]["ChiSquare_test_NED"] = chi2_contingency(contingency_table_CG)
 
                     # # # Print results
                     # # print("Results for success in CG step:")
@@ -800,3 +866,28 @@ class Evaluate:
                     # # print(f"Expected frequencies table :{expected_NED}")
                     # print(f"Chi-square statistic for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {chi2_NED}")
                     # print(f"P-value for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {p_value_NED}")
+
+                    precision_k_DK = {}  # David's version of precision@k
+                    precision_k = {}
+                    map_k = {}
+
+                    # filtered_df = df[df["sapbert_resolve_abbrev"] != 1000000]  # Filter out mentions whose correct answer were not in the candidates
+                    for i in range(1, k + 1):
+                        precision_k_DK[k] = precision_at_k_DK(
+                            df, "sapbert_resolve_abbrev", k
+                        )
+                        precision_k[i] = precision_at_k(df, name, i)
+                        map_k[i] = mean_average_precision_at_k(df, name, i)
+                        # precision_k_DK[k] = precision_at_k_DK(filtered_df, "sapbert_resolve_abbrev", k)
+                        # precision_k[i] = precision_at_k(filtered_df, name, i)
+                        # map_k[i] = mean_average_precision_at_k(filtered_df, name, i)
+
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ]["precision@k"] = precision_k
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ]["map@k"] = map_k
+                    self.detailed_results_analysis[eval_strat][dataset_name][
+                        model_name
+                    ]["precision@k_DK"] = precision_k_DK
