@@ -91,7 +91,7 @@ from bioel.ontology import BiomedicalOntology
 
 dataset_name = 'ncbi_disease'
 medic_dict = {"name" : "medic",
-            "filepath" : "path/to/medic"}
+            "filepath" : "path/to/medic"} # medic.tsv file
 
 ontology = BiomedicalOntology.load_medic(**medic_dict)
 
@@ -100,7 +100,7 @@ ontology = BiomedicalOntology.load_medic(**medic_dict)
 dataset_name = "gnormplus" # or "nlm_gene"
 
 entrez_dict = {"name" : "entrez",
-             "filepath" : "path/to/entrez", # gene_info.tsv
+             "filepath" : "path/to/entrez", # gene_info.tsv file
              "dataset" : f"{dataset_name}",}
 ontology = BiomedicalOntology.load_entrez(**entrez_dict)
 
