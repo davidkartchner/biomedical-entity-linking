@@ -82,6 +82,8 @@ For detailed results on failure stage, accuracy per type, recall@k per type, MAP
 ## Config files
 Examples of config files for the different models have been provided in `data/` directory
 
+## Load the different ontologies
+
 ```
 from bioel.ontology import BiomedicalOntology
 
