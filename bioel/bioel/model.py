@@ -5,6 +5,9 @@ from bioel.models.arboel.crossencoder.model.CrossEncoderLightningModule import (
 from bioel.models.arboel.biencoder.model.common.params import BlinkParser
 from bioel.models.krissbert.model.model import Krissbert
 from bioel.models.biogenel.LightningModule import BioGenElLightningModule
+from bioel.models.sapbert.model.metric_learning import Sap_Metric_Learning
+from bioel.models.sapbert.model.model_wrapper import Model_Wrapper
+from bioel.models.sapbert.train import parse_args
 
 import json
 import importlib
@@ -113,8 +116,33 @@ class BioEL_Model:
         )
 
     @classmethod
-    def load_sapbert(cls, name, params):
-        pass
+    def load_sapbert(cls, name, params_file=None, checkpoint_path=None):
+        if isinstance(params_file, str) and os.path.isfile(params_file):
+            with open(params_file, "r") as f:
+                json_params = json.load(f)
+        elif isinstance(params_file, dict):
+            json_params = params_file
+        else:
+            raise TypeError("params_file must be a valid file path or a dictionary")
+
+        params = parse_args(json_params)
+
+        model = Model_Wrapper()  # model wrapper
+
+        if checkpoint_path:
+            # Load the pretrained model from the specified path
+            model.load_pretrained_model(checkpoint_path, use_cuda=params["use_cuda"])
+
+        train_script_path = f"bioel/models/sapbert/train.py"
+        evaluate_script_path = f"bioel/models/sapbert/evaluate.py"
+
+        return cls(
+            model,  # model wrapper
+            name,
+            train_script_path,
+            evaluate_script_path,
+            params,
+        )
 
     @classmethod
     def load_krissbert(cls, name, params_file, checkpoint_path=None):
@@ -209,14 +237,14 @@ if __name__ == "__main__":
     # arboel_biencoder_model.training()
     # arboel_biencoder_model.inference()
 
-    print("Start work on arboel_crossencoder")
-    arboel_crossencoder_model = BioEL_Model.load_arboel_crossencoder(
-        name="arboel_bcrossencoder",
-        params_file="/home2/cye73/data_test2/arboel/medmentions_st21pv/params_crossencoder.json",
-        # checkpoint_path="/home2/cye73/results2/arboel/medmentions_st21pv/crossencoder_2024-09-25_13-22-32-epoch=1-Accuracy=0.89.ckpt",
-    )
-    arboel_crossencoder_model.training()
-    arboel_crossencoder_model.inference()
+    # print("Start work on arboel_crossencoder")
+    # arboel_crossencoder_model = BioEL_Model.load_arboel_crossencoder(
+    #     name="arboel_bcrossencoder",
+    #     params_file="/home2/cye73/data_test2/arboel/medmentions_st21pv/params_crossencoder.json",
+    #     # checkpoint_path="/home2/cye73/results2/arboel/medmentions_st21pv/crossencoder_2024-09-25_13-22-32-epoch=1-Accuracy=0.89.ckpt",
+    # )
+    # arboel_crossencoder_model.training()
+    # arboel_crossencoder_model.inference()
 
     # print("Start work on biobart")
     # biobart_model = BioEL_Model.load_biobart(
@@ -249,3 +277,12 @@ if __name__ == "__main__":
     # scispacy = BioEL_Model.load_scispacy(name="scispacy", params_file=scispacy_params)
     # scispacy.training()
     # scispacy.inference()
+
+    print("Start work on sapbert")
+    sapbert_model = BioEL_Model.load_sapbert(
+        name="sapbert",
+        params_file="/home2/cye73/data_test2/sapbert/ncbi_disease/params.json",
+        # checkpoint_path="/home2/cye73/data_test2/sapbert/ncbi_disease/finetuned_models_nice/likely-glade-21",
+    )
+    sapbert_model.training()
+    sapbert_model.inference()

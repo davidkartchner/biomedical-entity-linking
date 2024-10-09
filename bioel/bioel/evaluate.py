@@ -839,22 +839,22 @@ class Evaluate:
 
                     # Perform the Chi-square test
                     chi2_NED, p_value_NED, dof_NED, expected_NED = chi2_contingency(
-                        contingency_table_NED
+                        contingency_table_NED,
                     )
                     chi2_CG, p_value_CG, dof_CG, expected_CG = chi2_contingency(
-                        contingency_table_CG
+                        contingency_table_CG,
                     )
                     self.detailed_results_analysis[eval_strat][dataset_name][
                         model_name
                     ]["ChiSquare_test_NED"] = chi2_contingency(contingency_table_NED)
                     self.detailed_results_analysis[eval_strat][dataset_name][
                         model_name
-                    ]["ChiSquare_test_NED"] = chi2_contingency(contingency_table_CG)
+                    ]["ChiSquare_test_CG"] = chi2_contingency(contingency_table_CG)
 
                     # # # Print results
                     # # print("Results for success in CG step:")
                     # # print(f"Degree of freedom (dof) = number of different classes : {dof_CG}")
-                    # # # observed vs expected frequencies
+                    # # # observed vs expected frequencies under the assumption of independence
                     # # # If observed < expected, then there is a statistical difference for the class
                     # # print(f"Expected frequencies table :{expected_CG}")
                     # print(f"Chi-square statistic for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {chi2_CG}")
@@ -863,7 +863,7 @@ class Evaluate:
                     # print('-'*50)
                     # # print("Results for succes in NED step:")
                     # # print(f"Degree of freedom (dof) = number of different classes : {dof_NED}")
-                    # # print(f"Expected frequencies table :{expected_NED}")
+                    # # print(f"Expected frequencies table :{expected_NED}") # Expected frequencies for failure (col1) and succes (col2) for all types (rows)
                     # print(f"Chi-square statistic for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {chi2_NED}")
                     # print(f"P-value for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {p_value_NED}")
 

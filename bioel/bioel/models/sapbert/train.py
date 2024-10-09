@@ -22,6 +22,7 @@ from bioel.models.sapbert.model.metric_learning import Sap_Metric_Learning
 
 LOGGER = logging.getLogger(__name__)
 
+
 def parse_args(config):
     """
     Parse the input arguments
@@ -29,12 +30,22 @@ def parse_args(config):
     print(config)
     parser = argparse.ArgumentParser(description="SAPBERT Training")
     # Required
-    parser.add_argument("--model_dir", default=config['model_dir'], help="Directory for pretrained model")
     parser.add_argument(
-        "--train_dir", type=str, default=config['train_dir'], help="training set directory"
+        "--model_dir",
+        default=config["model_dir"],
+        help="Directory for pretrained model",
     )
     parser.add_argument(
-        "--output_dir", type=str, default=config['output_dir'], help="Directory for output"
+        "--train_dir",
+        type=str,
+        default=config["train_dir"],
+        help="training set directory",
+    )
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default=config["output_dir"],
+        help="Directory for output",
     )
     parser.add_argument(
         "--dataset_name",
@@ -48,24 +59,40 @@ def parse_args(config):
             "gnormplus",
             "ncbi_disease",
         ],
-        default=config['dataset_name'],
+        default=config["dataset_name"],
         help="data set to evaluate",
     )
-    parser.add_argument("--dict_cache_path", type=str, default=config['dict_cache_path'])
+    parser.add_argument(
+        "--dict_cache_path", type=str, default=config["dict_cache_path"]
+    )
     # Tokenizer settings
-    parser.add_argument("--max_length", type=int, default=config.get('max_length', 25))
+    parser.add_argument("--max_length", type=int, default=config.get("max_length", 25))
 
     # Train config
-    parser.add_argument("--use_cuda", default=config['use_cuda'])
+    parser.add_argument("--use_cuda", default=config["use_cuda"])
     parser.add_argument(
-        "--learning_rate", help="learning rate", default= config.get('learning_rate', 0.0001), type=float
+        "--learning_rate",
+        help="learning rate",
+        default=config.get("learning_rate", 0.0001),
+        type=float,
     )
-    parser.add_argument("--weight_decay", help="weight decay", default=config.get('weight_decay', 0.01), type=float)
     parser.add_argument(
-        "--train_batch_size", help="train batch size", default=config.get('train_batch_size', 240), type=int
+        "--weight_decay",
+        help="weight decay",
+        default=config.get("weight_decay", 0.01),
+        type=float,
     )
     parser.add_argument(
-        "--eval_batch_size", help="eval batch size", default=config.get('eval_batch_size', 240), type=int
+        "--train_batch_size",
+        help="train batch size",
+        default=config.get("train_batch_size", 240),
+        type=int,
+    )
+    parser.add_argument(
+        "--eval_batch_size",
+        help="eval batch size",
+        default=config.get("eval_batch_size", 240),
+        type=int,
     )
     parser.add_argument(
         "--split",
@@ -78,40 +105,81 @@ def parse_args(config):
         action="store_true",
         help="Run model with small data subset as a test of functionality",
     )
-    parser.add_argument("--dict_batch_size", type=int, default=config.get('dict_batch_size', 8192))
-    parser.add_argument("--topk", type=int, default=config.get('topk', 10))
-
-    parser.add_argument("--epoch", help="epoch to train", default=config.get('epoch', 3), type=int)
-    parser.add_argument("--save_checkpoint_all", default=config.get('save_checkpoint_all', False))
-    parser.add_argument("--checkpoint_step", type=int, default=config.get('checkpoint_step', 1000000))
     parser.add_argument(
-        "--amp", default=config.get('amp', False), help="automatic mixed precision training"
+        "--dict_batch_size", type=int, default=config.get("dict_batch_size", 8192)
     )
-    parser.add_argument("--parallel", default= config.get('parallel', False))
+    parser.add_argument("--topk", type=int, default=config.get("topk", 10))
+
+    parser.add_argument(
+        "--epoch", help="epoch to train", default=config.get("epoch", 3), type=int
+    )
+    parser.add_argument(
+        "--save_checkpoint_all", default=config.get("save_checkpoint_all", False)
+    )
+    parser.add_argument(
+        "--checkpoint_step", type=int, default=config.get("checkpoint_step", 1000000)
+    )
+    parser.add_argument(
+        "--amp",
+        default=config.get("amp", False),
+        help="automatic mixed precision training",
+    )
+    parser.add_argument("--parallel", default=config.get("parallel", False))
     # parser.add_argument('--cased', action="store_true")
     parser.add_argument(
-        "--pairwise", default=config.get('pairwise', False), help="if loading pairwise formatted datasets"
+        "--pairwise",
+        default=config.get("pairwise", False),
+        help="if loading pairwise formatted datasets",
     )
-    parser.add_argument("--random_seed", help="epoch to train", default=config.get('random_seed', 1992), type=int)
+    parser.add_argument(
+        "--random_seed",
+        help="epoch to train",
+        default=config.get("random_seed", 1992),
+        type=int,
+    )
     parser.add_argument(
         "--loss",
         help="{ms_loss|cosine_loss|circle_loss|triplet_loss}}",
-        default=config.get('loss',"ms_loss"),
+        default=config.get("loss", "ms_loss"),
     )
-    parser.add_argument("--use_miner", default= config.get('use_miner', False))
-    parser.add_argument("--miner_margin", default=config.get('miner_margin', 0.2), type=float)
-    parser.add_argument("--type_of_triplets", default=config.get('type_of_triplets', 'all'), type=str)
+    parser.add_argument("--use_miner", default=config.get("use_miner", False))
     parser.add_argument(
-        "--agg_mode", default=config.get('agg_mode', 'cls'), type=str, help="{cls|mean|mean_all_tok}"
+        "--miner_margin", default=config.get("miner_margin", 0.2), type=float
     )
-    parser.add_argument("--num_workers", default=config.get('num_workers', 16), type=int)
+    parser.add_argument(
+        "--type_of_triplets", default=config.get("type_of_triplets", "all"), type=str
+    )
+    parser.add_argument(
+        "--agg_mode",
+        default=config.get("agg_mode", "cls"),
+        type=str,
+        help="{cls|mean|mean_all_tok}",
+    )
+    parser.add_argument(
+        "--num_workers", default=config.get("num_workers", 16), type=int
+    )
     parser.add_argument("--mode", default=config.get("mode", "pretrain"), type=str)
-    parser.add_argument("--project", default=config.get('project', "SAPBERT"), type = str, help = "Wandb Project")
-    parser.add_argument("--resolve_abbreviations", default=config.get('resolve_abbreviations', False), help = "consider abbreviations for the BigBio"  )
-    parser.add_argument("--path_to_abbreviation", default= config["path_to_abbreviation"], type = str, help = "Path to the abbreviation dictionary")
+    parser.add_argument(
+        "--project",
+        default=config.get("project", "SAPBERT"),
+        type=str,
+        help="Wandb Project",
+    )
+    parser.add_argument(
+        "--resolve_abbreviations",
+        default=config.get("resolve_abbreviations", False),
+        help="consider abbreviations for the BigBio",
+    )
+    parser.add_argument(
+        "--path_to_abbreviation",
+        default=config["path_to_abbreviation"],
+        type=str,
+        help="Path to the abbreviation dictionary",
+    )
 
     args = parser.parse_args()
     return vars(args)
+
 
 def init_logging():
     LOGGER.setLevel(logging.INFO)
@@ -132,6 +200,7 @@ def init_seed(seed=None):
     random.seed(seed)
     torch.backends.cudnn.deterministic = True
 
+
 def train(config, data_loader, model, scaler=None, model_wrapper=None, step_global=0):
     LOGGER.info("train!")
 
@@ -151,12 +220,12 @@ def train(config, data_loader, model, scaler=None, model_wrapper=None, step_glob
 
         batch_y_cuda = batch_y.cuda()
 
-        if config['amp']:
+        if config["amp"]:
             with autocast():
                 loss = model(batch_x_cuda1, batch_x_cuda2, batch_y_cuda)
         else:
             loss = model(batch_x_cuda1, batch_x_cuda2, batch_y_cuda)
-        if config['amp']:
+        if config["amp"]:
             scaler.scale(loss).backward()
             scaler.step(model.optimizer)
             scaler.update()
@@ -173,9 +242,9 @@ def train(config, data_loader, model, scaler=None, model_wrapper=None, step_glob
         # LOGGER.info ("epoch: {} loss: {:.3f}".format(i+1, loss.item()))
 
         # save model every K iterations
-        if step_global % config['checkpoint_step'] == 0:
+        if step_global % config["checkpoint_step"] == 0:
             checkpoint_dir = os.path.join(
-                config['output_dir'], "checkpoint_iter_{}".format(str(step_global))
+                config["output_dir"], "checkpoint_iter_{}".format(str(step_global))
             )
             if not os.path.exists(checkpoint_dir):
                 os.makedirs(checkpoint_dir)
@@ -183,27 +252,29 @@ def train(config, data_loader, model, scaler=None, model_wrapper=None, step_glob
     train_loss /= train_steps + 1e-9
     return train_loss, step_global
 
-def train_model(params, model_wrapper):
+
+def train_model(params, model):
+    model_wrapper = model  # model wrapper
     init_logging()
     torch.manual_seed(params["random_seed"])
 
     # Initialize Wandb
-    wandb.init(project = params["project"], config = params)
+    wandb.init(project=params["project"], config=params)
 
     if not os.path.exists(params["output_dir"]):
         os.makedirs(params["output_dir"])
-    
+
     # Load BERT Tokenizer, dense encoder
-    #model_wrapper = Model_Wrapper()
+    # model_wrapper = Model_Wrapper()
     encoder, tokenizer = model_wrapper.load_bert(
-        path = params["model_dir"],
-        max_length = params["max_length"],
-        use_cuda = params["use_cuda"],
+        path=params["model_dir"],
+        max_length=params["max_length"],
+        use_cuda=params["use_cuda"],
     )
 
     # Load the SAP Model
-    model = Sap_Metric_Learning(
-        encoder = encoder,
+    model_true = Sap_Metric_Learning(
+        encoder=encoder,
         learning_rate=params["learning_rate"],
         weight_decay=params["weight_decay"],
         use_cuda=params["use_cuda"],
@@ -217,7 +288,7 @@ def train_model(params, model_wrapper):
 
     # paramsure for Parallel Processing
     if params["parallel"]:
-        model.encoder = torch.nn.DataParallel(model.encoder)
+        model_true.encoder = torch.nn.DataParallel(model_true.encoder)
         LOGGER.info("Parallel Processing enabled")
 
     # Prepare the date module
@@ -231,7 +302,7 @@ def train_model(params, model_wrapper):
         scaler = GradScaler()
     else:
         scaler = None
-    
+
     start = time.time()
     step_global = 0
     for epoch in range(1, params["epoch"] + 1):
@@ -239,9 +310,9 @@ def train_model(params, model_wrapper):
 
         # train the model
         train_loss, step_global = train(
-            params, 
+            params,
             data_loader=train_loader,
-            model=model,
+            model=model_true,
             scaler=scaler,
             model_wrapper=model_wrapper,
             step_global=step_global,
@@ -249,19 +320,18 @@ def train_model(params, model_wrapper):
 
         LOGGER.info("loss/train_per_epoch={}/{}".format(train_loss, epoch))
 
-        if params['save_checkpoint_all']:
+        if params["save_checkpoint_all"]:
             checkpoint_dir = os.path.join(
-                params['output_dir'], "checkpoint_epoch_{}".format(str(epoch))
+                params["output_dir"], "checkpoint_epoch_{}".format(str(epoch))
             )
             if not os.path.exists(checkpoint_dir):
                 os.makedirs(checkpoint_dir)
             model_wrapper.save_model(checkpoint_dir)
-        
 
         # Save the model Last Epoch
         if epoch == params["epoch"]:
             model_wrapper.save_model(os.path.join(params["output_dir"], wandb.run.name))
-    
+
     end = time.time()
     training_time = end - start
     training_hour = int(training_time / 60 / 60)
@@ -280,6 +350,7 @@ def train_model(params, model_wrapper):
                 training_hour, training_min, training_sec
             )
         )
+
 
 # if __name__ == "__main__":
 #     config = parse_args()
