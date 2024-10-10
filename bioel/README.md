@@ -29,7 +29,7 @@ Ontologies included in the package :
 As a preprocessing step, we resolve abbreviations in the text using Ab3P, an abbreviation detector created for biomedical text. We ran abbreviation detection on the text of all documents in our benchmark, the results of which are stored in a large dictionary in `data/abbreviations.json`. In order to reproduce our abbreviation detection/resolution pipeline, please run the following:
 
 ```
-from bioel.utils.solve_abbreviation.solve_abbreviation import create_abbrev
+from bioel.utils.solve_abbreviation.solve_abbreviations import create_abbrev
 create_abbrev(output_dir, all_dataset)
 # output_path : path where to create abbreviations.json
 # all_dataset : datasets for which you want the abbreviations.
