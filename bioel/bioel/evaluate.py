@@ -403,7 +403,7 @@ class Evaluate:
         )  # Recall@k for all eval strategies, datasets, and models
         self.detailed_results_analysis = (
             {}
-        )  # Detailed results for failure stage, statistical significance (p_values, chi2), accuracy per type, recall@k per type
+        )  # Detailed results for failure stage, statistical significance (p_values, chi2), accuracy per type, recall@k per type, MAP@k
         self.max_k = kwargs.get("max_k", 10)
 
     def load_results(self):
@@ -863,7 +863,7 @@ class Evaluate:
                     # print('-'*50)
                     # # print("Results for succes in NED step:")
                     # # print(f"Degree of freedom (dof) = number of different classes : {dof_NED}")
-                    # # print(f"Expected frequencies table :{expected_NED}") # Expected frequencies for failure (col1) and succes (col2) for all types (rows)
+                    # # print(f"Expected frequencies table :{expected_NED}") # Expected values for class=0 (failure) and class=1 (success) for the different categories (rows)
                     # print(f"Chi-square statistic for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {chi2_NED}")
                     # print(f"P-value for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {p_value_NED}")
 
