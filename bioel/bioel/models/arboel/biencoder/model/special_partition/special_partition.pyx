@@ -12,7 +12,7 @@ from IPython import embed
 
 INT = int
 BOOL = bool
-ctypedef np.int_t INT_t
+ctypedef np.int32_t INT_t
 ctypedef np.float64_t FLOAT_t
 ctypedef np.npy_bool BOOL_t
 

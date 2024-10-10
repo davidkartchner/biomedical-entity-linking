@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field, asdict
 from typing import List, Optional, Union, Dict
 from tqdm import tqdm
+import pandas as pd
 
 from bioel.logger import setup_logger
 from bioel.utils.bigbio_utils import dataset_unique_tax_ids
@@ -9,7 +10,6 @@ import obonet
 import csv
 from bioel.utils.obo_utils import _obo_extract_definition, _obo_extract_synonyms
 from bioel.utils.umls_utils import UmlsMappings
-import pandas as pd
 import warnings
 import ujson
 import json
@@ -324,13 +324,16 @@ class BiomedicalOntology:
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
     
     @classmethod
-    def load_umls(cls, filepath, name=None, abbrev=None, api_key=""):
+    def load_umls(
+        cls, filepath, path_st21pv_cui=None, name=None, abbrev=None, api_key=""
+    ):
         """
         Read an ontology from the UMLS Directory
 
         Parameters:
         ----------------------
             filepath: str (Pointing to the UMLS directory)
+            path_st21pv_cui : str (optional : Path to st21pv cuis subset for umls)
             name: str (optional)
             abbrev: str (optional)
             api_key: str (optional)
@@ -364,6 +367,14 @@ class BiomedicalOntology:
             )
             .reset_index()
         )
+
+        if path_st21pv_cui:
+            with open(path_st21pv_cui, "r") as file:
+                umls_cuis_st21pv = ujson.load(file)
+            all_umls_df = all_umls_df[
+                all_umls_df["cui"].isin(umls_cuis_st21pv)
+            ].reset_index()
+
         all_umls_df["name"] = all_umls_df.cui.map(umls_to_name)
         all_umls_df["alias"] = all_umls_df[["name", "alias"]].apply(
             lambda x: list(set(x[1]) - set([x[0]])), axis=1
@@ -372,7 +383,9 @@ class BiomedicalOntology:
         all_umls_df["has_definition"] = all_umls_df["def"].map(lambda x: x is not None)
         all_umls_df["num_aliases"] = all_umls_df["alias"].map(lambda x: len(x))
 
-        for index, row in tqdm(all_umls_df.iterrows(), desc = "Loading UMLS Ontology"):
+        print("Number of entities :", all_umls_df.shape[0])
+
+        for index, row in tqdm(all_umls_df.iterrows(), desc="Loading UMLS Ontology"):
             entity = BiomedicalEntity(
                 cui=row["cui"],
                 name=row["name"],

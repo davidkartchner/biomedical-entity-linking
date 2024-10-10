@@ -43,7 +43,7 @@ from bioel.evaluate import Evaluate
 
 # load model
 krissbert = BioEL_Model.load_krissbert(
-        name="krissbert", params_file=params,
+        name="krissbert", params_file='path/to/params_krissbert.json",
     )
 # Look at data/params.json for more information about the parameters
 krissbert.training() # train
@@ -57,14 +57,80 @@ path_to_result = {
         "krissbert": "results/ncbi_disease.json"
     }
 }
+eval_strategies=["basic"]
 
 # Results
-evaluator = Evaluate(dataset_names, model_names, path_to_result, abbreviations_path)
+evaluator = Evaluate(dataset_names=dataset_names, 
+                     model_names=model_names, 
+                     path_to_result=path_to_result, 
+                     abbreviations_path=abbreviations_path, 
+                     eval_strategies=eval_strategies,
+                     max_k=10,
+                     )
 evaluator.load_results()
 evaluator.process_datasets()
 evaluator.evaluate()
 evaluator.plot_results()
+evaluator.detailed_results()
 ```
+
+These functions will run the evaluation for all models / datasets.
+For error analysis with hit index details, use `evaluator.error_analysis_dfs` attribute.
+For detailed results on failure stage, accuracy per type, recall@k per type, MAP@k, statistical significance (p_values), use `evaluator.detailed_results_analysis`.
+
+
+## Config files
+Examples of config files for the different models have been provided in `data/` directory
+
+## Load the different ontologies
+
+```
+from bioel.ontology import BiomedicalOntology
+
+##### ----------------- Load medic ----------------- #####
+
+dataset_name = 'ncbi_disease'
+medic_dict = {"name" : "medic",
+            "filepath" : "path/to/medic"} # medic.tsv file
+
+ontology = BiomedicalOntology.load_medic(**medic_dict)
+
+##### ----------------- Load entrez ----------------- #####
+
+dataset_name = "gnormplus" # or "nlm_gene"
+
+entrez_dict = {"name" : "entrez",
+             "filepath" : "path/to/entrez", # gene_info.tsv file
+             "dataset" : f"{dataset_name}",}
+ontology = BiomedicalOntology.load_entrez(**entrez_dict)
+
+##### ----------------- Load MESH ----------------- #####
+
+dataset_name = "nlmchem"
+mesh_dict = {"name" : "mesh",
+             "filepath" : "path/to/umls"}
+ontology = BiomedicalOntology.load_mesh(**mesh_dict)
+
+##### ----------------- Load UMLS (st21pv subset) ----------------- #####
+
+dataset_name = "medmentions_st21pv"
+umls_dict_st21pv = {
+    "name": "umls",
+    "filepath": "path/to/umls",
+    "path_st21pv_cui": "data/umls_cuis_st21pv.json",
+}
+ontology = BiomedicalOntology.load_umls(**umls_dict_st21pv)
+
+##### ----------------- Load UMLS (full) ----------------- #####
+
+dataset_name = "medmentions_full"
+umls_dict = {
+    "name": "umls",
+    "filepath": "path/to/umls",
+}
+ontology = BiomedicalOntology.load_umls(**umls_dict)
+```
+
 
 ## ArboEL
 
