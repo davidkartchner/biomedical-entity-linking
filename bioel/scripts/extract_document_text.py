@@ -61,7 +61,6 @@ for pmid, text_set in all_full_text.items():
     if "\n" in text:
         print(pmid)
     all_full_text[pmid] = text.replace("\n", " ")
-
 # Write output to file
 with open(output_path, "w") as f:
     output = "\n\n".join(
