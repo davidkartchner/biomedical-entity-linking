@@ -80,7 +80,7 @@ For detailed results on failure stage, accuracy per type, recall@k per type, MAP
 
 ## Load the different datasets
 ```
-from bioel.evaluate import Evaluate
+from bioel.dataset import Dataset
 abbreviations_path = "data/abbreviations.json"
 dataset_name = "bc5cdr" # Specify the desired dataset name from the BigBio collection here.
 dataset = Dataset(
