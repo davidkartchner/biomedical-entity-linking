@@ -40,7 +40,7 @@ class Mention:
     deabbreviated_text: Optional[str]
 
 
-class BigBioDataset(torch.utils.data.Dataset):
+class Dataset(torch.utils.data.Dataset):
     def __init__(
         self,
         dataset_name: str,
@@ -79,7 +79,7 @@ class BigBioDataset(torch.utils.data.Dataset):
         )
         df["start"] = df["offsets"].map(lambda x: x[0][0])
         df["end"] = df["offsets"].map(lambda x: x[-1][-1])
-        df = df[df.split.isin(splits)]
+        # df = df[df.split.isin(splits)]
         # print(dataset_name, splits, df.split.unique())
 
         self.df = df
@@ -90,7 +90,5 @@ class BigBioDataset(torch.utils.data.Dataset):
 if __name__ == "__main__":
     # Tests
     abbreviations_path = "/home2/cye73/data_test/abbreviations.json"
-    bc5cdr = BigBioDataset(
-        "bc5cdr", ["train", "validation", "test"], abbreviations_path
-    )
+    bc5cdr = Dataset("bc5cdr", ["train", "validation", "test"], abbreviations_path)
     bc5cdr.data
