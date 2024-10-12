@@ -78,9 +78,17 @@ These functions will run the evaluation for all models / datasets.
 For error analysis with hit index details, use `evaluator.error_analysis_dfs` attribute.
 For detailed results on failure stage, accuracy per type, recall@k per type, MAP@k, statistical significance (p_values), use `evaluator.detailed_results_analysis`.
 
+## Load the different datasets
+```
+from bioel.evaluate import Evaluate
+abbreviations_path = "data/abbreviations.json"
+dataset_name = "bc5cdr" # Specify the desired dataset name from the BigBio collection here.
+dataset = Dataset(
+    dataset_name = dataset_name, abbreviations_path=abbreviations_path
+)
 
-## Config files
-Examples of config files for the different models have been provided in `data/` directory
+```
+
 
 ## Load the different ontologies
 
@@ -130,6 +138,9 @@ umls_dict = {
 }
 ontology = BiomedicalOntology.load_umls(**umls_dict)
 ```
+
+## Config files
+Example configuration files for the various models are available in the `data/` directory for users to reference and follow.
 
 
 ## ArboEL
