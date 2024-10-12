@@ -1,0 +1,29 @@
+{
+    "data_path": "data/arboel/ncbi_disease",
+    "output_path": "results/arboel/ncbi_disease",
+    "dataset": "ncbi_disease",
+    "ontology": "medic",
+    "ontology_dict": {
+        "name": "medic",
+        "filepath": "/mitchell/entity-linking/kbs/medic.tsv"
+    },
+    "pos_neg_loss": true,
+    "force_exact_search": true,
+    "embed_batch_size": 3500,
+    "model_name_or_path": "dmis-lab/biobert-base-cased-v1.2",
+    "num_train_epochs": 1,
+    "train_batch_size": 16,
+    "gradient_accumulation_steps": 8,
+    "knn": 10,
+    "experiment": "ncbi_disease_biencoder",
+    "path_to_abbrev": "data/abbreviations.json",
+    "recall_k": 64,
+    "only_recall": true,
+    "load_function": "load_medic",
+    "limit_train_batches": 1.0,
+    "limit_val_batches": 0.05,
+    "limit_test_batches": 1.0,
+    "devices": [
+        2
+    ]
+}

@@ -9,7 +9,6 @@ from tqdm.auto import tqdm
 from bioel.models.sapbert.data.utils import DictionaryDataset
 
 
-
 LOGGER = logging.getLogger()
 
 
@@ -78,22 +77,24 @@ def parse_args_bigbio():
     args = parser.parse_args()
     return args
 
+
 def make_unique_model_savepath(dir, model, dataset, file_ext):
     # Ensure the directory exists
     if not os.path.exists(dir):
         os.makedirs(dir)
-    
+
     # Create the base filename
     base_filename = f"{model}_{dataset}.{file_ext}"
     unique_filename = base_filename
     counter = 1
-    
+
     # Append a number to the filename until a unique one is found
     while os.path.exists(os.path.join(dir, unique_filename)):
         unique_filename = f"{model}_{dataset}_{counter}.{file_ext}"
         counter += 1
-    
+
     return os.path.join(dir, unique_filename)
+
 
 def init_logging():
     LOGGER.setLevel(logging.INFO)
@@ -197,6 +198,7 @@ def sapbert_predict(
             if len(results) == 0 and debug:
                 LOGGER.debug(metadata)
         results.extend(metadata)
+        # print(f"results : {results[:10]}")
 
         if debug:
             break

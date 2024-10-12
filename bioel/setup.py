@@ -68,7 +68,7 @@ setup(
         "scikit-learn",
         "torch",
         "scispacy",
-        "fairseq",
+        "fairseq==0.12.0",
         "accelerate",
         "pytorch_metric_learning",
     ],
