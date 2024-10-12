@@ -35,7 +35,7 @@ create_abbrev(output_dir, all_dataset)
 # all_dataset : datasets for which you want the abbreviations.
 ```
 
-## Example usage
+## Example Usage: Model Training, Inference, and Evaluation
 ```
 # Import modules
 from bioel.model import BioEL_Model
