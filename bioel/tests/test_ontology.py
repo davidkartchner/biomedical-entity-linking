@@ -1,5 +1,7 @@
 import unittest
 import numpy as np
+import os
+import json
 
 from tqdm import tqdm
 
@@ -26,6 +28,39 @@ class TestOntology(unittest.TestCase):
             self.check_multiprefix(ontology)
             self.check_unique_cui(ontology)
 
+    def test_json_loader(self):
+        """
+        TestCase - 1: Read from the Json/Jsonl Ontology Directory and check for data formatting issues in the entities.
+        """
+        test_cases = [
+            {
+                "filepath": "https://ai2-s2-scispacy.s3-us-west-2.amazonaws.com/data/kbs/2023-04-23/umls_mesh_2022.jsonl",
+                "name": "MESH",
+            },
+            {
+                "filepath": "https://ai2-s2-scispacy.s3-us-west-2.amazonaws.com/data/kbs/2023-04-23/umls_mesh_2022.jsonl",
+                "name": "MESH",
+            },
+            {
+                "filepath": "./Cached_files/datasets/umls_mesh_2022.jsonl",
+                "name": "MESH",
+            }
+
+        ]
+        case_index=0
+        for case in tqdm(test_cases):
+            ontology = BiomedicalOntology.load_json(**case)
+            print(list(ontology.entities.values())[:5])
+            self.check_multiprefix(ontology)
+            self.check_unique_cui(ontology)
+
+            if case_index == 0 :
+                self.check_url_caching(case["filepath"])
+            if case_index == 1 :
+                self.check_unique_url_caching(case["filepath"])
+            
+            case_index += 1
+    
     def test_mesh_loader(self):
         """
         TestCase - 1: Read from the local UMLS Directory and check for data formatting issues in the entities.
@@ -43,7 +78,7 @@ class TestOntology(unittest.TestCase):
             print(list(ontology.entities.values())[:5])
             self.check_multiprefix(ontology)
             self.check_unique_cui(ontology)
-
+    
     def test_umls_loader(self):
         """
         TestCase - 1: Read from the local UMLS Directory and check for data formatting issues in the entities.
@@ -61,7 +96,7 @@ class TestOntology(unittest.TestCase):
             print(list(ontology.entities.values())[:5])
             self.check_multiprefix(ontology)
             self.check_unique_cui(ontology)
-
+    
     def test_obo_loader(self):
 
         test_cases = [
@@ -110,7 +145,7 @@ class TestOntology(unittest.TestCase):
             print(list(ontology.entities.values())[:5])
             self.check_multiprefix(ontology)
             self.check_unique_cui(ontology)
-
+    
     def check_multiprefix(self, ontology: BiomedicalOntology):
         """
         Make each entity has a single prefix
@@ -130,7 +165,64 @@ class TestOntology(unittest.TestCase):
         cuis = [entity.cui for cui, entity in ontology.entities.items()]
         if len(cuis) != len(set(cuis)):
             raise AssertionError("Ontology contains duplicate CUIs")
+    
+    def check_url_caching(self, url: str, path = "./Cached_files/datasets"):
+        """
+        This function is used to be sure that the provided HTTP path to the file is stored in the cache folder correctly 
+        """
+        # List all files in the directory
+        files = os.listdir(path)
 
+        # Filter files ending with .json
+        json_files = [file for file in files if file.endswith('.json')]
+
+        # Iterate over each JSON file
+        index = 0
+        for json_file in json_files:
+            file_path = os.path.join(path, json_file)
+
+            with open(file_path, 'r') as f:
+                # Load JSON data
+                json_data = json.load(f)
+                
+                # Check if the first key is "url"
+                if "url" in json_data:
+                    url_value = json_data["url"]
+                    if url_value == url :
+                        break
+            
+            if index == len(json_files):
+                raise AssertionError(f"Could not find any ontology URL: {url} cached in {path}")
+                    
+
+    def check_unique_url_caching(self, url: str, path = "./Cached_files/datasets"):
+        """
+        This function is used to be sure that the provided HTTP path to the file is stored in the cache folder 
+        only once for each unique HTTP path
+        """
+        # List all files in the directory
+        files = os.listdir(path)
+
+        # Filter files ending with .json
+        json_files = [file for file in files if file.endswith('.json')]
+
+        num_cached_url = 0
+        # Iterate over each JSON file
+        for json_file in json_files:
+            file_path = os.path.join(path, json_file)
+
+            with open(file_path, 'r') as f:
+                # Load JSON data
+                json_data = json.load(f)
+                
+                # Check if the first key is "url"
+                if "url" in json_data:
+                    url_value = json_data["url"]
+                    if url_value == url :
+                        num_cached_url += 1
+
+        if num_cached_url >= 2:
+            raise AssertionError(f"Ontology URL in {url} has more than 1 cached file in {path}")
 
 if __name__ == "__main__":
     unittest.main()
