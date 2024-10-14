@@ -4,18 +4,18 @@
     "ontology_name": "mesh",
     "ontology_dict": {
         "name": "mesh",
-        "filepath": "/your/ontology/path"
+        "filepath": "/mitchell/entity-linking/2017AA/META/"
     },
     "load_function": "load_mesh",
-    "path_to_abbrev": "data/abbreviations.json",
+    "path_to_abbrev": "../data/abbreviations.json",
     "resolve_abbrevs": true,
     "preprocess_data": true,
     "model_save_path": "bioel/models/biogenel/model_saved/Lightning_checkpoint-20000/biobart/bc5cdr",
     "trie_path": "data/biobart/abbr_res/bc5cdr/trie.pkl",
     "dict_path": "data/biobart/abbr_res/bc5cdr/target_kb.json",
-    "model_load_path": "bioel/models/biogenel/kb_guided_pretrain_ckpt_hf",
-    "model_token_path": "facebook/bart-large",
-    "logging_path": "bioel/models/biogenel/logs_bis",
+    "model_load_path": "GanjinZero/biobart-v2-base",
+    "model_token_path": "facebook/bart-base",
+    "logging_path": "logs_bis/",
     "logging_steps": 100,
     "save_steps": 20000,
     "num_train_epochs": 8,
