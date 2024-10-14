@@ -16,7 +16,7 @@ cd fairseq
 pip install --editable ./
 ```
 
-fairseq requires its own installation because their package is not up-to-date.
+Currently, installing `fairseq` requires cloning the repository directly, as we encountered an issue when attempting installation via pip. We have reported the issue to the `fairseq` team, and once it's resolved, we will update our setup accordingly.
 
 ## Development Instructions
 
