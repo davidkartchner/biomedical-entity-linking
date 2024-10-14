@@ -1,10 +1,19 @@
 # BioEL: A comprehensive package for training, evaluating, and benchmarking biomedical entity linking models.
 
 ## Installation
+
+
+
 ```bash
 conda create -n bioel python=3.9
 conda activate bioel
 pip install -e .
+
+python3 -m pip install pip==24.0
+
+git clone https://github.com/pytorch/fairseq
+cd fairseq
+pip install --editable ./
 ```
 
 ## Development Instructions
