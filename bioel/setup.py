@@ -68,7 +68,7 @@ setup(
         "scikit-learn",
         "torch",
         "scispacy",
-        "fairseq==0.12.0",
+        # "fairseq = 0.12.2",
         "accelerate",
     ],
     ext_modules=cythonize(cython_extensions),

@@ -716,6 +716,9 @@ class Evaluate:
                         model_name
                     ] = {}
 
+                    assert (
+                        "type" in df.columns
+                    ), "'type' column is missing in the DataFrame for a comparison per type"
                     df = self.error_analysis_dfs[eval_strat][dataset_name]
                     # Convert the 'type' column to strings
                     df["type"] = df["type"].apply(str)

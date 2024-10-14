@@ -283,6 +283,7 @@ if __name__ == "__main__":
         name="sapbert",
         params_file="/home2/cye73/data_test2/sapbert/ncbi_disease/params.json",
         # checkpoint_path="/home2/cye73/data_test2/sapbert/ncbi_disease/finetuned_models_nice/likely-glade-21",
+        checkpoint_path="/home2/cye73/data_test2/sapbert/ncbi_disease/ncbi_disease2",
     )
-    sapbert_model.training()
+    # sapbert_model.training()
     sapbert_model.inference()

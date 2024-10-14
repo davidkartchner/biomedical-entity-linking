@@ -88,21 +88,21 @@ if __name__ == "__main__":
     #     ontology_dir = "Y:/mitchell/entity-linking/2017AA/META/",
     #     ontology_name = "mesh",
     #     resolve_abbrevs=False)
-    # cuis_to_aliases(
-    #     ontology=BiomedicalOntology.load_medic(
-    #         filepath="/mitchell/entity-linking/kbs/medic.tsv", name="medic"
-    #     ),
-    #     save_dir="/home2/cye73/data_test2/sapbert/ncbi_disease/",
-    #     dataset_name="ncbi_disease",
-    # )
     cuis_to_aliases(
-        ontology=BiomedicalOntology.load_entrez(
-            filepath="/mitchell/entity-linking/el-robustness-comparison/data/gene_info.tsv",
-            dataset="gnormplus",
+        ontology=BiomedicalOntology.load_medic(
+            filepath="/mitchell/entity-linking/kbs/medic.tsv", name="medic"
         ),
         save_dir="/home2/cye73/data_test2/sapbert/ncbi_disease/",
-        dataset_name="gnormplus",
+        dataset_name="ncbi_disease",
     )
+    # cuis_to_aliases(
+    #     ontology=BiomedicalOntology.load_entrez(
+    #         filepath="/mitchell/entity-linking/el-robustness-comparison/data/gene_info.tsv",
+    #         dataset="gnormplus",
+    #     ),
+    #     save_dir="/home2/cye73/data_test2/sapbert/ncbi_disease/",
+    #     dataset_name="gnormplus",
+    # )
     # cuis_to_aliases(
     #     ontology=BiomedicalOntology.load_entrez(
     #         filepath="/mitchell/entity-linking/el-robustness-comparison/data/gene_info.tsv",
