@@ -16,6 +16,8 @@ cd fairseq
 pip install --editable ./
 ```
 
+fairseq requires its own installation because their package is not up-to-date.
+
 ## Development Instructions
 
 1. Install as in editable package using `pip` as shown above.
