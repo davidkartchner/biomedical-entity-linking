@@ -148,6 +148,25 @@ Example configuration files for the various models are available in the `data/` 
 
 ArboEL operates in two stages: First, you need to train the biencoder (`load_arboel_biencoder`). Then, you use the candidate results from the biencoder to train the crossencoder (`load_arboel_crossencoder`) and perform evaluation with the crossencoder.
 
+## SapBERT
+
+To train SapBERT, the first step is to generate the aliases, which can be adone using the following method:
+
+```
+# Example with medic ontology
+from bioel.models.sapbert.data.data_processing import cuis_to_aliases
+from bioel.ontology import BiomedicalOntology
+
+ontology = BiomedicalOntology.load_medic(
+    filepath="path/to/medic", name="medic"
+)
+
+cuis_to_aliases(
+    ontology= ontology, # ontology object
+    save_dir="path/to/alias.txt", # path where to save the aliases
+    dataset_name="ncbi_disease", # name of the dataset
+)
+```
 
 ## BioBART/BioGenEL
 
