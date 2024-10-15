@@ -20,7 +20,7 @@ Currently, installing `fairseq` requires cloning the repository directly, as we 
 
 ## Development Instructions
 
-1. Install as in editable package using `pip` as shown above.
+1. Install it as an editable package using `pip` as shown above.
 1. Add any new dependencies to `setup.py`.
 1. Add tests to `tests/` directory.
 
@@ -161,7 +161,7 @@ ArboEL operates in two stages: First, you need to train the biencoder (`load_arb
 
 ## SapBERT
 
-To train SapBERT, the first step is to generate the aliases, which can be adone using the following method:
+To train SapBERT, the first step is to generate the aliases, which can be done using the following method:
 
 ```
 # Example with medic ontology
