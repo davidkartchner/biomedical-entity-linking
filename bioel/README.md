@@ -193,4 +193,3 @@ Some important information:
 - `trie_path` and `dict_path` will be set to `data/abbreviationmode/datasetname/` folder for a given `data` folder. Thus, if `resolve_abbrevs` is set to `true`, make sure to include `/abbr_res/datasetname/trie.pkl` as a path extension for the trie and `/abbr_res/datasetname/target_kb.json` for the dict.
 - For evaluation set `evaluation` to `true` and change the `model_load_path` to the path you provided to `model_save_path` during training. 
 
-<!-- TODO: Add quickstart, examples -->
