@@ -54,11 +54,13 @@ from bioel.evaluate import Evaluate
 
 # load model
 krissbert = BioEL_Model.load_krissbert(
-        name="krissbert", params_file='path/to/params_krissbert.json",
+        name="krissbert",
+        params_file='path/to/params_krissbert.json",
+        # checkpoint_path="path/to/checkpoint" # if you have an already trained model
     )
 # Look at data/params.json for more information about the parameters
-krissbert.training() # train
-krissbert.inference() # inference
+krissbert.training() # Train the model
+krissbert.inference() # Inference
 
 abbreviations_path = "data/abbreviations.json"
 dataset_names = ["ncbi_disease"]
