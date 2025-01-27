@@ -52,14 +52,16 @@ create_abbrev(output_dir, all_dataset)
 from bioel.model import BioEL_Model
 from bioel.evaluate import Evaluate
 
-# load model
+# 1) load model
+# Look at data/params.json for more information about the config file
 krissbert = BioEL_Model.load_krissbert(
         name="krissbert",
-        params_file='path/to/params_krissbert.json",
+        params_file='path/to/params_krissbert.json", # config file
         # checkpoint_path="path/to/checkpoint" # if you have an already trained model
     )
-# Look at data/params.json for more information about the parameters
-krissbert.training() # Train the model
+
+# 2) Training and inference
+krissbert.training() # Train
 krissbert.inference() # Inference
 
 abbreviations_path = "data/abbreviations.json"
@@ -78,7 +80,7 @@ evaluator = Evaluate(dataset_names=dataset_names,
                      path_to_result=path_to_result, 
                      abbreviations_path=abbreviations_path, 
                      eval_strategies=eval_strategies,
-                     max_k=10,
+                     max_k=10, # number of candidates to consider
                      )
 evaluator.load_results()
 evaluator.process_datasets()
@@ -86,10 +88,15 @@ evaluator.evaluate()
 evaluator.plot_results()
 evaluator.detailed_results()
 ```
+1. Load the Model: Use the `BioEL_Model` class to load your model. Ensure you have a configuration file (params.json) ready.
+2. Training and Inference: Perform training and inference using the training() and inference() methods.
+3. Evaluation:
+        Run evaluations for all models across all datasets using the `Evaluate` class.
+        For error analysis with hit index details, use the `evaluator.error_analysis_dfs` attribute.
+        For detailed performance metrics such as failure stage breakdown, accuracy per type, recall@k per type, MAP@k, and statistical significance (p-values), refer to the `evaluator.detailed_results_analysis` attribute.
 
-These functions will run the evaluation for all models / datasets.
-For error analysis with hit index details, use `evaluator.error_analysis_dfs` attribute.
-For detailed results on failure stage, accuracy per type, recall@k per type, MAP@k, statistical significance (p_values), use `evaluator.detailed_results_analysis`.
+## Config files
+Example of configuration files for the various models are provided in the `data/` directory. These can serve as references for users to create or modify their own configuration files.
 
 ## Load the different datasets
 ```
@@ -151,9 +158,6 @@ umls_dict = {
 }
 ontology = BiomedicalOntology.load_umls(**umls_dict)
 ```
-
-## Config files
-Example configuration files for the various models are available in the `data/` directory for users to reference and follow.
 
 
 ## ArboEL
