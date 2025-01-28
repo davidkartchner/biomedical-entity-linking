@@ -1,15 +1,26 @@
 # BioEL: A comprehensive package for training, evaluating, and benchmarking biomedical entity linking models.
 
 ## Installation
+
+
+
 ```bash
 conda create -n bioel python=3.9
 conda activate bioel
 pip install -e .
+
+python3 -m pip install pip==24.0
+
+git clone https://github.com/pytorch/fairseq
+cd fairseq
+pip install --editable ./
 ```
+
+Currently, installing `fairseq` requires cloning the repository directly, as we encountered an issue when attempting installation via pip. We have reported the issue to the `fairseq` team, and once it's resolved, we will update our setup accordingly.
 
 ## Development Instructions
 
-1. Install as in editable package using `pip` as shown above.
+1. Install it as an editable package using `pip` as shown above.
 1. Add any new dependencies to `setup.py`.
 1. Add tests to `tests/` directory.
 
@@ -35,19 +46,23 @@ create_abbrev(output_dir, all_dataset)
 # all_dataset : datasets for which you want the abbreviations.
 ```
 
-## Example usage
+## Example Usage: Model Training, Inference, and Evaluation
 ```
 # Import modules
 from bioel.model import BioEL_Model
 from bioel.evaluate import Evaluate
 
-# load model
+# 1) load model
+# Look at data/params.json for more information about the config file
 krissbert = BioEL_Model.load_krissbert(
-        name="krissbert", params_file='path/to/params_krissbert.json",
+        name="krissbert",
+        params_file='path/to/params_krissbert.json", # config file
+        # checkpoint_path="path/to/checkpoint" # if you have an already trained model
     )
-# Look at data/params.json for more information about the parameters
-krissbert.training() # train
-krissbert.inference() # inference
+
+# 2) Training and inference
+krissbert.training() # Train
+krissbert.inference() # Inference
 
 abbreviations_path = "data/abbreviations.json"
 dataset_names = ["ncbi_disease"]
@@ -65,7 +80,7 @@ evaluator = Evaluate(dataset_names=dataset_names,
                      path_to_result=path_to_result, 
                      abbreviations_path=abbreviations_path, 
                      eval_strategies=eval_strategies,
-                     max_k=10,
+                     max_k=10, # number of candidates to consider
                      )
 evaluator.load_results()
 evaluator.process_datasets()
@@ -73,14 +88,19 @@ evaluator.evaluate()
 evaluator.plot_results()
 evaluator.detailed_results()
 ```
+1. Load the Model: Use the `BioEL_Model` class to load your model. Ensure you have a configuration file (params.json) ready.
+2. Training and Inference: Perform training and inference using the training() and inference() methods.
+3. Evaluation:
+        Run evaluations for all models across all datasets using the `Evaluate` class.
+        For error analysis with hit index details, use the `evaluator.error_analysis_dfs` attribute.
+        For detailed performance metrics such as failure stage breakdown, accuracy per type, recall@k per type, MAP@k, and statistical significance (p-values), refer to the `evaluator.detailed_results_analysis` attribute.
 
-These functions will run the evaluation for all models / datasets.
-For error analysis with hit index details, use `evaluator.error_analysis_dfs` attribute.
-For detailed results on failure stage, accuracy per type, recall@k per type, MAP@k, statistical significance (p_values), use `evaluator.detailed_results_analysis`.
+## Config files
+Example of configuration files for the various models are provided in the `data/` directory. These can serve as references for users to create or modify their own configuration files.
 
 ## Load the different datasets
 ```
-from bioel.evaluate import Evaluate
+from bioel.dataset import Dataset
 abbreviations_path = "data/abbreviations.json"
 dataset_name = "bc5cdr" # Specify the desired dataset name from the BigBio collection here.
 dataset = Dataset(
@@ -139,15 +159,31 @@ umls_dict = {
 ontology = BiomedicalOntology.load_umls(**umls_dict)
 ```
 
-## Config files
-Example configuration files for the various models are available in the `data/` directory for users to reference and follow.
-
 
 ## ArboEL
 
 
 ArboEL operates in two stages: First, you need to train the biencoder (`load_arboel_biencoder`). Then, you use the candidate results from the biencoder to train the crossencoder (`load_arboel_crossencoder`) and perform evaluation with the crossencoder.
 
+## SapBERT
+
+To train SapBERT, the first step is to generate the aliases, which can be done using the following method:
+
+```
+# Example with medic ontology
+from bioel.models.sapbert.data.data_processing import cuis_to_aliases
+from bioel.ontology import BiomedicalOntology
+
+ontology = BiomedicalOntology.load_medic(
+    filepath="path/to/medic", name="medic"
+)
+
+cuis_to_aliases(
+    ontology= ontology, # ontology object
+    save_dir="path/to/alias.txt", # path where to save the aliases
+    dataset_name="ncbi_disease", # name of the dataset
+)
+```
 
 ## BioBART/BioGenEL
 
@@ -163,70 +199,3 @@ Some important information:
 - `trie_path` and `dict_path` will be set to `data/abbreviationmode/datasetname/` folder for a given `data` folder. Thus, if `resolve_abbrevs` is set to `true`, make sure to include `/abbr_res/datasetname/trie.pkl` as a path extension for the trie and `/abbr_res/datasetname/target_kb.json` for the dict.
 - For evaluation set `evaluation` to `true` and change the `model_load_path` to the path you provided to `model_save_path` during training. 
 
-Here is a config file example for BioBart during training:
-```
-{
-    "dataset_path": "/home/bnursal3/biomedical-entity-linking/bioel/bioel/models/biogenel/data/",
-    "dataset_name": "bc5cdr",
-    "ontology_name": "mesh",
-    "ontology_dict": {
-        "name": "mesh",
-        "filepath": "/your/ontology/path"
-    },
-    "load_function": "load_mesh",
-    "path_to_abbrev": "/home/bnursal3/biomedical-entity-linking/bioel/bioel/models/biogenel/abbreviations.json",
-    "resolve_abbrevs": true,
-    "preprocess_data": true,
-    "model_save_path": "/home/bnursal3/biomedical-entity-linking/bioel/bioel/models/biogenel/model_saved/Lightning_checkpoint-20000/biobart/bc5cdr",
-    "trie_path": "/home/bnursal3/biomedical-entity-linking/bioel/bioel/models/biogenel/data/abbr_res/bc5cdr/trie.pkl",
-    "dict_path": "/home/bnursal3/biomedical-entity-linking/bioel/bioel/models/biogenel/data/abbr_res/bc5cdr/target_kb.json",
-    "model_load_path": "/home/bnursal3/biomedical-entity-linking/bioel/bioel/models/biogenel/kb_guided_pretrain_ckpt_hf",
-    "model_token_path": "facebook/bart-large",
-    "logging_path": "/home/bnursal3/biomedical-entity-linking/bioel/bioel/models/biogenel/logs_bis",
-    "logging_steps": 100,
-    "save_steps": 20000,
-    "num_train_epochs": 8,
-    "per_device_train_batch_size": 8,
-    "per_device_eval_batch_size": 1,
-    "warmup_steps": 500,
-    "finetune": true ,
-    "t5": false,
-    "fairseq_loss": false,
-    "evaluation": false,
-    "testset": true,
-    "load_prompt": true,
-    "weight_decay": 0.01,
-    "length_penalty": 1,
-    "beam_threshold": 0,
-    "unlikelihood_loss": false,
-    "init_lr": 1e-5,
-    "evaluation_strategy": "no",
-    "prompt_tokens_enc": 0,
-    "prompt_tokens_dec": 0,
-    "seed": 0,
-    "label_smoothing_factor": 0.1,
-    "unlikelihood_weight": 0.1,
-    "max_grad_norm": 0.1,
-    "max_steps": 20000,
-    "gradient_accumulate": 1,
-    "lr_scheduler_type": "polynomial",
-    "attention_dropout": 0.1,
-    "dropout":0.1,
-    "max_position_embeddings": 1024,
-    "num_beams": 20,
-    "max_length": 384,
-    "min_length": 1,
-    "sample_train": false,
-    "prefix_prompt": false,
-    "rerank": false,
-    "init_from_vocab": false,
-    "no_finetune_decoder": false,
-    "syn_pretrain": false,
-    "gold_sty": false,
-    "prefix_mention_is": true,
-    "rdrop": 0.0
-}
-```
-
-
-<!-- TODO: Add quickstart, examples -->
