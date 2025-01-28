@@ -12,6 +12,8 @@ from bioel.utils.obo_utils import _obo_extract_definition, _obo_extract_synonyms
 from bioel.utils.umls_utils import UmlsMappings
 import warnings
 import ujson
+import json
+from bioel.utils.file_cache import get_path
 
 logger = setup_logger()
 
@@ -320,7 +322,7 @@ class BiomedicalOntology:
             types.append(row["type_of_gene"])
 
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
-
+    
     @classmethod
     def load_umls(
         cls, filepath, path_st21pv_cui=None, name=None, abbrev=None, api_key=""
@@ -406,6 +408,97 @@ class BiomedicalOntology:
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
 
     @classmethod
+    def load_entrez(cls, filepath, dataset, name=None, abbrev=None, api_key=""):
+        """
+        Read medic ontology
+
+        Parameters:
+        ----------------------
+            filepath: str (Pointing to the medic directory)
+            name: str (optional)
+            abbrev: str (optional)
+            api_key: str (optional)
+        """
+
+        entities = {}
+        types = []
+
+        logger.info(f"Reading entrez from {filepath}")
+
+        # Open the TSV file
+        entrez = pd.read_csv(
+            filepath,
+            delimiter="\t",
+            usecols=[
+                "#tax_id",
+                "GeneID",
+                "Symbol",
+                "Synonyms",
+                "Symbol_from_nomenclature_authority",
+                "Full_name_from_nomenclature_authority",
+                "Other_designations",
+                "type_of_gene",
+                "description",
+                "dbXrefs",
+            ],
+            na_filter=False,
+            low_memory=False,
+        ).rename(
+            {
+                "Symbol_from_nomenclature_authority": "official_symbol",
+                "Full_name_from_nomenclature_authority": "official_name",
+                "#tax_id": "tax_id",
+            },
+            axis=1,
+        )
+        entrez.columns = [x.lower() for x in entrez.columns]
+
+        unique_tax_ids = dataset_unique_tax_ids(dataset, entrez)
+
+        geneid_mask = (
+            (entrez.tax_id.isin(unique_tax_ids))
+            & (~entrez.type_of_gene.isin(["unknown", "tRNA", "biological-region"]))
+            & (entrez.description != "hypothetical protein")
+            & (~entrez.official_name.map(lambda x: x.lower().startswith("predicted")))
+        )
+        entrez = entrez[geneid_mask]
+
+        entrez.replace("-", "", inplace=True)
+        entrez["geneid"] = entrez["geneid"].map(lambda x: f"NCBIGene:{x}")
+        entrez["metadata"] = entrez[
+            [
+                "official_symbol",
+                "official_name",
+            ]
+        ].progress_apply(
+            lambda x: ";".join(list(set([i for i in x if i.strip() != "-"]))), axis=1
+        )
+
+        for index, row in entrez.iterrows():
+
+            entity = BiomedicalEntity(
+                cui=row["geneid"],
+                name=row["symbol"],
+                types=row["type_of_gene"],
+                aliases=row["synonyms"],
+                definition=row["description"],
+                taxonomy=row["tax_id"],
+                metadata=row["metadata"],
+            )
+
+            if row["geneid"] in entities:
+                logger.warning(
+                    f"Duplicate CUI {row['geneid']} found in ontology.  Skipping."
+                )
+                continue
+
+            entities[row["geneid"]] = entity
+
+            types.append(row["type_of_gene"])
+
+        return cls(entities=entities, types=types, name=name, abbrev=abbrev)
+
+    @classmethod
     def load_mesh(cls, filepath, name=None, abbrev=None, api_key=""):
         """
         Read an ontology from the MESH Directory
@@ -486,6 +579,45 @@ class BiomedicalOntology:
             types.append(ent_type)
 
         return cls(entities=entities, types=types, name=name, abbrev=abbrev)
+        
+    @classmethod
+    def load_json(cls, filepath, name=None):
+        '''
+        file_path: str, required.
+            The file path to the json/jsonl representation of the KB to load.
+        name: str, optional.
+            The ontology name to load.
+        '''
+        if filepath is None:
+            raise ValueError(
+                "provide a valid path"
+            )
+        if filepath.endswith("jsonl"):
+            raw = (json.loads(line) for line in open(get_path(filepath)))
+        else:
+            raw = json.load(open(get_path(filepath)))
+
+        logger.info(f"Reading the given Json ontology from {filepath}")
+        
+        index = 0
+        types = []
+        entities = {}
+        metadata ={}
+        if name is None:
+            name = "json_onto"
+        for concept in raw:
+            types.append(concept["types"])
+            metadata[concept["concept_id"]] = index
+            index += 1
+            if concept["concept_id"] in entities:
+                logger.warning(f"Duplicate CUI {concept['concept_id']} found in ontology.  Skipping.")
+                continue
+            elif 'definition' in concept:
+                entities[concept["concept_id"]] = BiomedicalEntity(concept["concept_id"], concept["canonical_name"], concept["types"], concept["aliases"], concept["definition"])
+            else:
+                entities[concept["concept_id"]] = BiomedicalEntity(concept["concept_id"], concept["canonical_name"], concept["types"], concept["aliases"])
+                
+        return cls(entities = entities, types = types, metadata = metadata, name = name)
 
     def load_ncbi_taxon(self):
         pass

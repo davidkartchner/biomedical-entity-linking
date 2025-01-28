@@ -88,7 +88,7 @@ class Dataset(torch.utils.data.Dataset):
 
 
 if __name__ == "__main__":
-    # Tests
+    # Testss
     abbreviations_path = "/home2/cye73/data_test/abbreviations.json"
     bc5cdr = Dataset("bc5cdr", ["train", "validation", "test"], abbreviations_path)
     bc5cdr.data
