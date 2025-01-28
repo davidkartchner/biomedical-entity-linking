@@ -278,12 +278,13 @@ if __name__ == "__main__":
     # scispacy.training()
     # scispacy.inference()
 
-    print("Start work on sapbert")
+    # dataset = "nlm_gene"
+    dataset = "nlmchem"
+    print("Start work on sapbert :", dataset)
     sapbert_model = BioEL_Model.load_sapbert(
         name="sapbert",
-        params_file="/home2/cye73/data_test2/sapbert/ncbi_disease/params.json",
-        # checkpoint_path="/home2/cye73/data_test2/sapbert/ncbi_disease/finetuned_models_nice/likely-glade-21",
-        checkpoint_path="/home2/cye73/data_test2/sapbert/ncbi_disease/ncbi_disease2",
+        params_file=f"/home2/cye73/data_test2/sapbert/{dataset}/params.json",
+        checkpoint_path=f"/home2/cye73/data_test2/sapbert/{dataset}/finetuned_models_nice/eager-voice-55",
     )
     # sapbert_model.training()
     sapbert_model.inference()

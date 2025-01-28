@@ -24,13 +24,19 @@ cython_extensions = [
     )
 ]
 
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
 # Setup function to include the Cython extension
 setup(
     name="bioel",
-    version="0.1.0",
+    version="0.1.2",
     description="An easy-to-use package for all your biomedical entity linking needs.",
-    # long_description=long_description,
-    url="",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/davidkartchner/biomedical-entity-linking/tree/arboel/bioel",
+    license="MIT",
+    license_files=["LICENSE"],
     author="Pathology Dynamics Lab, Georgia Institute of Technology",
     author_email="",
     keywords=[

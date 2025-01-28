@@ -26,7 +26,6 @@ from bioel.utils.dataset_consts import (
     CUIS_TO_EXCLUDE,
     VALIDATION_DOCUMENT_IDS,
 )
-from bioel.ontology import BiomedicalOntology
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 from bioel.ontology import BiomedicalOntology

@@ -405,6 +405,7 @@ class Evaluate:
             {}
         )  # Detailed results for failure stage, statistical significance (p_values, chi2), accuracy per type, recall@k per type, MAP@k
         self.max_k = kwargs.get("max_k", 10)
+        self.split = kwargs.get("split", "test")
 
     def load_results(self):
         """
@@ -492,7 +493,7 @@ class Evaluate:
                     )
                 )
 
-            df = df[df["split"] == "test"].reset_index(drop=True)
+            df = df[df["split"] == self.split].reset_index(drop=True)
             self.data[name] = df
 
     def evaluate(self, eval_strategies=None):
@@ -716,10 +717,10 @@ class Evaluate:
                         model_name
                     ] = {}
 
+                    df = self.error_analysis_dfs[eval_strat][dataset_name]
                     assert (
                         "type" in df.columns
                     ), "'type' column is missing in the DataFrame for a comparison per type"
-                    df = self.error_analysis_dfs[eval_strat][dataset_name]
                     # Convert the 'type' column to strings
                     df["type"] = df["type"].apply(str)
 
