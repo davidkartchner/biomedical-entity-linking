@@ -237,12 +237,13 @@ class Config:
 
 if __name__ == "__main__":
     # print("Start work on arboel_biencoder")
-    # arboel_biencoder_model = BioEL_Model.load_arboel_biencoder(
-    #     name="arboel_biencoder",
-    #     params_file="/home2/cye73/data_test2/arboel/medmentions_st21pv/params_biencoder.json",
-    # )
-    # arboel_biencoder_model.training()
-    # arboel_biencoder_model.inference()
+    dataset = "ncbi_disease"
+    arboel_biencoder_model = BioEL_Model.load_arboel_biencoder(
+        name="arboel_biencoder",
+        params_file=f"/home2/cye73/data_test2/arboel/{dataset}/params_biencoder.json",
+    )
+    arboel_biencoder_model.training()
+    arboel_biencoder_model.inference()
 
     # print("Start work on arboel_crossencoder")
     # arboel_crossencoder_model = BioEL_Model.load_arboel_crossencoder(
@@ -285,13 +286,13 @@ if __name__ == "__main__":
     # scispacy.training()
     # scispacy.inference()
 
-    # dataset = "nlm_gene"
-    dataset = "nlmchem"
-    print("Start work on sapbert :", dataset)
-    sapbert_model = BioEL_Model.load_sapbert(
-        name="sapbert",
-        params_file=f"/home2/cye73/data_test2/sapbert/{dataset}/params.json",
-        checkpoint_path=f"/home2/cye73/data_test2/sapbert/{dataset}/finetuned_models_nice/eager-voice-55",
-    )
-    # sapbert_model.training()
-    sapbert_model.inference()
+    # # dataset = "nlm_gene"
+    # dataset = "nlmchem"
+    # print("Start work on sapbert :", dataset)
+    # sapbert_model = BioEL_Model.load_sapbert(
+    #     name="sapbert",
+    #     params_file=f"/home2/cye73/data_test2/sapbert/{dataset}/params.json",
+    #     checkpoint_path=f"/home2/cye73/data_test2/sapbert/{dataset}/finetuned_models_nice/eager-voice-55",
+    # )
+    # # sapbert_model.training()
+    # sapbert_model.inference()

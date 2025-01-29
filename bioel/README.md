@@ -7,14 +7,18 @@
 ```bash
 conda create -n bioel python=3.9
 conda activate bioel
-pip install -e .
+pip install bioel
 
 python3 -m pip install pip==24.0
 
 git clone https://github.com/pytorch/fairseq
 cd fairseq
 pip install --editable ./
+
+pip install numpy==1.23
 ```
+
+Biobart and Biogenel require transformers version 4.44.2. This specific version of transformers depends on functionality available in numpy version 1.23.
 
 Currently, installing `fairseq` requires cloning the repository directly, as we encountered an issue when attempting installation via pip. We have reported the issue to the `fairseq` team, and once it's resolved, we will update our setup accordingly.
 

@@ -30,11 +30,11 @@ with open("README.md", "r", encoding="utf-8") as fh:
 # Setup function to include the Cython extension
 setup(
     name="bioel",
-    version="0.1.2",
+    version="0.1.6",
     description="An easy-to-use package for all your biomedical entity linking needs.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/davidkartchner/biomedical-entity-linking/tree/arboel/bioel",
+    url="https://github.com/davidkartchner/biomedical-entity-linking/tree/main/bioel",
     license="MIT",
     license_files=["LICENSE"],
     author="Pathology Dynamics Lab, Georgia Institute of Technology",
