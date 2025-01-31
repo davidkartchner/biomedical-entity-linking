@@ -1,0 +1,12 @@
+{
+    "dataset": "ncbi_disease",
+    "load_function": "load_medic",
+    "ontology_dict": {
+        "name": "medic",
+        "filepath": "/mitchell/entity-linking/kbs/medic.tsv"
+    },
+    "k": 10,
+    "path_to_save": "path/to/save",
+    "equivalant_cuis": true,
+    "path_to_abbrev": "../data/abbreviations.json"
+}

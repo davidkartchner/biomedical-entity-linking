@@ -78,7 +78,7 @@ path_to_result = {
 }
 eval_strategies=["basic"]
 
-# Results
+# 3) Results
 evaluator = Evaluate(dataset_names=dataset_names, 
                      model_names=model_names, 
                      path_to_result=path_to_result, 

@@ -30,7 +30,7 @@ def evaluate_model(
     model,
 ):
     """
-    Params :
+    Params : dict
     ---------
     dataset: str
         Name of the dataset to evaluate
@@ -47,6 +47,8 @@ def evaluate_model(
     path_to_abbrev: str
         Path to the abbreviations file
     """
+    print("type of params :", type(params))
+    print("params :", params)
     if hasattr(BiomedicalOntology, params["load_function"]):
         load_func = getattr(BiomedicalOntology, params["load_function"])
         if params["ontology_dict"]:
@@ -127,5 +129,8 @@ def evaluate_model(
                 }
             )
 
-    with open(params["output_path"], "w") as f:
+    output_dir = params["path_to_save"]
+    os.makedirs(output_dir, exist_ok=True)  # Create the directory if it doesn't exist
+    output_path = os.path.join(output_dir, "output.json")
+    with open(output_path, "w") as f:
         f.write(ujson.dumps(output, indent=2))
