@@ -730,9 +730,10 @@ class Evaluate:
                     print(f"Processing {name}")
 
                     # Number of mentions where failure happened at CG step per type
-                    count_miss_CG_per_type = (
-                        df[df[name] == 1000000].groupby("type").size()
-                    )
+                    # count_miss_CG_per_type = (
+                    #     df[df[name] == 1000000].groupby("type").size()
+                    # )
+                    count_miss_CG_per_type = df[df[name] > k].groupby("type").size()
                     self.detailed_results_analysis[eval_strat][dataset_name][
                         model_name
                     ][
@@ -742,10 +743,13 @@ class Evaluate:
                     )  # pandas series to dataframe + reset index (not aligned otherwise)
 
                     # Number of mentions where failure happened at NED step per type
+                    # count_miss_NED_per_type = (
+                    #     df[(df[name] != 1000000) & (df[name] != 0)]
+                    #     .groupby("type")
+                    #     .size()
+                    # )
                     count_miss_NED_per_type = (
-                        df[(df[name] != 1000000) & (df[name] != 0)]
-                        .groupby("type")
-                        .size()
+                        df[(df[name] <= k) & (df[name] != 0)].groupby("type").size()
                     )
                     self.detailed_results_analysis[eval_strat][dataset_name][
                         model_name
@@ -811,15 +815,6 @@ class Evaluate:
                         model_name
                     ]["failure_stage_NED"] = failure_stage_NED
 
-                    # print(f"Number of mentions where the CG step failed for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {count_miss_CG}")
-                    # print(f"Number of mentions where the NED step failed for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {count_miss_NED}")
-                    # print(f"Number of of correctly linked mentions for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {count_success}")
-                    # print(f"Number of mentions with hit_index < k for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {count_hit_k}")
-                    # print(f"Accuracy per type for model {model_name} on dataset {name} with eval strategy {eval_strat} : {accuracy_per_type}")
-                    # print(f"Recall@k per type for model {model_name} on dataset {name} with eval strategy {eval_strat} : {recall_k_per_type}")
-                    # print(" '%' of mentions for which linking failed in CG for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : ", failure_stage_CG)
-                    # print(" '%' of mentions for which linking failed in NED for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : ", failure_stage_NED)
-
                     # Create a new column candidate generation 'CG' to indicate if the correct cui is among the candidates (1) or not (0)
                     df["CG"] = df[name].apply(lambda x: 1 if x != 1000000 else 0)
                     # Create a new column Named Entity Disambiguation 'NED' to indicate if the prediction was correct (1) or incorrect (0)
@@ -855,34 +850,16 @@ class Evaluate:
                         model_name
                     ]["ChiSquare_test_CG"] = chi2_contingency(contingency_table_CG)
 
-                    # # # Print results
-                    # # print("Results for success in CG step:")
-                    # # print(f"Degree of freedom (dof) = number of different classes : {dof_CG}")
-                    # # # observed vs expected frequencies under the assumption of independence
-                    # # # If observed < expected, then there is a statistical difference for the class
-                    # # print(f"Expected frequencies table :{expected_CG}")
-                    # print(f"Chi-square statistic for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {chi2_CG}")
-                    # print(f"P-value for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {p_value_CG}")
-
-                    # print('-'*50)
-                    # # print("Results for succes in NED step:")
-                    # # print(f"Degree of freedom (dof) = number of different classes : {dof_NED}")
-                    # # print(f"Expected frequencies table :{expected_NED}") # Expected values for class=0 (failure) and class=1 (success) for the different categories (rows)
-                    # print(f"Chi-square statistic for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {chi2_NED}")
-                    # print(f"P-value for model {model_name} on dataset {dataset_name} with eval strategy {eval_strat} : {p_value_NED}")
-
                     precision_k_DK = {}  # David's version of precision@k
                     precision_k = {}
                     map_k = {}
 
                     # filtered_df = df[df["sapbert_resolve_abbrev"] != 1000000]  # Filter out mentions whose correct answer were not in the candidates
                     for i in range(1, k + 1):
-                        precision_k_DK[k] = precision_at_k_DK(
-                            df, "sapbert_resolve_abbrev", k
-                        )
+                        precision_k_DK[k] = precision_at_k_DK(df, name, k)
                         precision_k[i] = precision_at_k(df, name, i)
                         map_k[i] = mean_average_precision_at_k(df, name, i)
-                        # precision_k_DK[k] = precision_at_k_DK(filtered_df, "sapbert_resolve_abbrev", k)
+                        # precision_k_DK[k] = precision_at_k_DK(filtered_df, name, k)
                         # precision_k[i] = precision_at_k(filtered_df, name, i)
                         # map_k[i] = mean_average_precision_at_k(filtered_df, name, i)
 

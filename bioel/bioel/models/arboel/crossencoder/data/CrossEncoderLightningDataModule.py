@@ -213,7 +213,7 @@ def get_data_loader(
     fname = os.path.join(
         params["biencoder_indices_path"], f"candidates_{cand_name}_top64.t7"
     )
-    stored_data = torch.load(fname)
+    stored_data = torch.load(fname, weights_only=False)
     processed_data, entity_dictionary, tensor_data = load_data(
         data_split,
         tokenizer,

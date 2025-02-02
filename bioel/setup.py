@@ -30,7 +30,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 # Setup function to include the Cython extension
 setup(
     name="bioel",
-    version="0.1.6",
+    version="0.1.12",
     description="An easy-to-use package for all your biomedical entity linking needs.",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -72,7 +72,7 @@ setup(
         "faiss-cpu",
         "wandb",
         "scikit-learn",
-        "torch",
+        "torch==2.4",
         "scispacy",
         # "fairseq = 0.12.2",
         "accelerate",

@@ -184,7 +184,7 @@ class KnowledgeBaseEmbeddings:
         )
         json.dump(concept_aliases, open(umls_concept_aliases_path, "w"))
         scipy.sparse.save_npz(
-            tfidf_vectors_path, concept_alias_tfidfs.astype(numpy.float16)
+            tfidf_vectors_path, concept_alias_tfidfs.astype(numpy.float32)
         )
 
         print(f"Fitting ann index on {len(concept_aliases)} aliases (takes 2 hours)")
